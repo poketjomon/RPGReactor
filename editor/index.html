@@ -197,7 +197,6 @@
             <div class="toolbar-separator"></div>
             <span class="toolbar-label" data-i18n="toolbar.tools">Tools:</span>
             <button class="tool-button"  id="toolbar-event-manager-btn" data-action="toggle-event-mode" title="Event Manager" data-i18n-title="toolbar.title.eventManager"><img src="images/icon-event.png" onerror="this.style.display='none'; this.style.display='none';"><span class="tool-button-label" data-i18n="toolbar.label.events">Events</span></button>
-            <button class="tool-button"  id="toolbar-decor-btn" data-action="toggle-decor-mode" title="Free placement: pick a tile in the palette, click the map to stamp it anywhere; events place freely in Event mode"><img src="images/icon-free-tiles.svg" alt="" onerror="this.style.display='none'; this.style.display='none';"><span class="tool-button-label" data-i18n="toolbar.label.freeTiles">Place</span></button>
             <button class="tool-button"  id="toolbar-database-btn" data-action="open-database" title="Database" data-i18n-title="toolbar.title.database">
                 <img src="images/icon-database.svg" alt="" onerror="this.style.display='none'; this.style.display='none';">
             <span class="tool-button-label" data-i18n="toolbar.label.database">Database</span></button>
@@ -335,6 +334,10 @@
                                 <label class="map-info-item map-pixel-movement" title="Pixel movement on this map" data-i18n-title="toolbar.title.pixelMovement">
                                     <input id="map-pixel-movement" type="checkbox" aria-label="Pixel movement on this map" data-i18n-aria="toolbar.title.pixelMovement">
                                     <span data-i18n="workspace.pixel">Pixel</span>
+                                </label>
+                                <label class="map-info-item map-free-placement" title="Free placement: tick, pick a tile in the palette, click the map to stamp it anywhere; events place freely in Event mode" data-i18n-title="toolbar.title.freePlacement">
+                                    <input id="map-free-placement" type="checkbox" aria-label="Free placement" data-i18n-aria="toolbar.title.freePlacement">
+                                    <span data-i18n="toolbar.label.freeTiles">Place</span>
                                 </label>
                                 <span class="map-info-item"><span data-i18n="workspace.zoom">Zoom:</span> <span class="map-info-value" id="map-zoom">100%</span></span>
                                 <span class="map-info-item">(<span class="map-info-value" id="map-coordinates">--,--</span>)</span>

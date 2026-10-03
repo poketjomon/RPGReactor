@@ -417,6 +417,13 @@ class RPGReactor {
             }
             RRMapPixelTags.setPixel(map, event.currentTarget.checked);
         });
+        // Free placement is a working mode, not a one-shot: the box ticks
+        // while the tool holds the map and unticks when another tool takes it.
+        document.getElementById('map-free-placement')?.addEventListener('change', (event) => {
+            const box = event.currentTarget;
+            this.toggleDecorMode();
+            box.checked = !!this.decorManager?.active;
+        });
         // The box follows the map once one is open (each map remembers its
         // own view); with no map yet it starts clear, and three.js is not
         // parsed until a viewport actually needs it.
@@ -846,10 +853,13 @@ class RPGReactor {
     syncMapToolButtons() {
         const owner = this.mapTool, map = this.mapEditor;
         const building = owner === 'pieces' || (!!this.buildHotbar?.visible && (owner === 'lighting' || owner === 'media' || owner === 'terrain' || owner === 'models'));
-        for (const [selector,tool] of [['#toolbar-event-manager-btn','events'],['#toolbar-decor-btn','decor'],['[data-action="media-surfaces"]','media'],['[data-action="lighting-tool"]','lighting'],['[data-action="build-tool"]','pieces']]) {
+        for (const [selector,tool] of [['#toolbar-event-manager-btn','events'],['[data-action="media-surfaces"]','media'],['[data-action="lighting-tool"]','lighting'],['[data-action="build-tool"]','pieces']]) {
             const on = tool === 'pieces' ? building : owner === tool;
             const button=document.querySelector(selector);button?.classList.toggle('active',on);button?.setAttribute('aria-pressed',String(on));
         }
+        const placeBox = typeof document !== 'undefined' && document.getElementById
+            ? document.getElementById('map-free-placement') : null;
+        if (placeBox) placeBox.checked = owner === 'decor';
         document.querySelectorAll('.tool-draw-mode').forEach(button=>{
             const active=owner==='paint'&&!map?.shadowPenMode&&button.dataset.tool===map?.currentTool;
             button.classList.toggle('active',active);button.setAttribute('aria-pressed',String(active));

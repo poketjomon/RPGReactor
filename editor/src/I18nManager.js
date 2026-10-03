@@ -21574,3 +21574,23 @@ Object.assign(RR_I18N_STRINGS['id'], {'workspace.pixel': 'Piksel', 'toolbar.titl
 Object.assign(RR_I18N_STRINGS['vi'], {'workspace.pixel': 'Điểm ảnh', 'toolbar.title.pixelMovement': 'Di chuyển theo điểm ảnh trên bản đồ này'});
 Object.assign(RR_I18N_STRINGS['th'], {'workspace.pixel': 'พิกเซล', 'toolbar.title.pixelMovement': 'การเคลื่อนที่แบบพิกเซลบนแผนที่นี้'});
 Object.assign(RR_I18N_STRINGS['tr'], {'workspace.pixel': 'Piksel', 'toolbar.title.pixelMovement': 'Bu haritada piksel hareketi'});
+
+// The map bar free-placement checkbox tooltip.
+Object.assign(RR_I18N_STRINGS['en'], {'toolbar.title.freePlacement': 'Free placement on this map'});
+Object.assign(RR_I18N_STRINGS['ja'], {'toolbar.title.freePlacement': 'このマップの自由配置'});
+Object.assign(RR_I18N_STRINGS['es'], {'toolbar.title.freePlacement': 'Colocación libre en este mapa'});
+Object.assign(RR_I18N_STRINGS['zh-Hant'], {'toolbar.title.freePlacement': '此地圖的自由放置'});
+Object.assign(RR_I18N_STRINGS['zh-Hans'], {'toolbar.title.freePlacement': '此地图的自由放置'});
+Object.assign(RR_I18N_STRINGS['ru'], {'toolbar.title.freePlacement': 'Свободное размещение на этой карте'});
+Object.assign(RR_I18N_STRINGS['pt'], {'toolbar.title.freePlacement': 'Posicionamento livre neste mapa'});
+Object.assign(RR_I18N_STRINGS['de'], {'toolbar.title.freePlacement': 'Freies Platzieren auf dieser Karte'});
+Object.assign(RR_I18N_STRINGS['fr'], {'toolbar.title.freePlacement': 'Placement libre sur cette carte'});
+Object.assign(RR_I18N_STRINGS['el'], {'toolbar.title.freePlacement': 'Ελεύθερη τοποθέτηση σε αυτόν τον χάρτη'});
+Object.assign(RR_I18N_STRINGS['ko'], {'toolbar.title.freePlacement': '이 맵의 자유 배치'});
+Object.assign(RR_I18N_STRINGS['ar'], {'toolbar.title.freePlacement': 'وضع حر في هذه الخريطة'});
+Object.assign(RR_I18N_STRINGS['it'], {'toolbar.title.freePlacement': 'Posizionamento libero su questa mappa'});
+Object.assign(RR_I18N_STRINGS['pl'], {'toolbar.title.freePlacement': 'Swobodne rozmieszczanie na tej mapie'});
+Object.assign(RR_I18N_STRINGS['id'], {'toolbar.title.freePlacement': 'Penempatan bebas di peta ini'});
+Object.assign(RR_I18N_STRINGS['vi'], {'toolbar.title.freePlacement': 'Đặt tự do trên bản đồ này'});
+Object.assign(RR_I18N_STRINGS['th'], {'toolbar.title.freePlacement': 'การวางแบบอิสระบนแผนที่นี้'});
+Object.assign(RR_I18N_STRINGS['tr'], {'toolbar.title.freePlacement': 'Bu haritada serbest yerleştirme'});
