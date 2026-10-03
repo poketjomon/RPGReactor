@@ -166,56 +166,56 @@
 
         <!-- Toolbar - only shown when project is loaded -->
         <div id="toolbar" class="project-only" style="display: none;">
-            <button class="tool-button" data-action="new-project" title="New Project" data-i18n-title="toolbar.title.newProject"><img src="images/icon-new-project.png"></button>
-            <button class="tool-button" data-action="open-project" title="Open Project" data-i18n-title="toolbar.title.openProject"><img src="images/icon-open-project.png"></button>
-            <button class="tool-button" data-action="save" title="Save Project" data-i18n-title="toolbar.title.saveProject"><img src="images/icon-save.png"></button>
+            <button class="tool-button"  data-action="new-project" title="New Project" data-i18n-title="toolbar.title.newProject"><img src="images/icon-new-project.png"><span class="tool-button-label" data-i18n="toolbar.label.new">New</span></button>
+            <button class="tool-button"  data-action="open-project" title="Open Project" data-i18n-title="toolbar.title.openProject"><img src="images/icon-open-project.png"><span class="tool-button-label" data-i18n="toolbar.label.open">Open</span></button>
+            <button class="tool-button"  data-action="save" title="Save Project" data-i18n-title="toolbar.title.saveProject"><img src="images/icon-save.png"><span class="tool-button-label" data-i18n="toolbar.label.save">Save</span></button>
             <div class="toolbar-separator"></div>
-            <button class="tool-button" id="undo-btn" data-action="undo" title="Undo (Ctrl+Z)" data-i18n-title="toolbar.title.undo" disabled><img src="images/icon-undo.svg" alt=""></button>
-            <button class="tool-button" id="redo-btn" data-action="redo" title="Redo (Ctrl+Y)" data-i18n-title="toolbar.title.redo" disabled><img src="images/icon-redo.svg" alt=""></button>
+            <button class="tool-button"  id="undo-btn" data-action="undo" title="Undo (Ctrl+Z)" data-i18n-title="toolbar.title.undo" disabled><img src="images/icon-undo.svg" alt=""><span class="tool-button-label" data-i18n="toolbar.label.undo">Undo</span></button>
+            <button class="tool-button"  id="redo-btn" data-action="redo" title="Redo (Ctrl+Y)" data-i18n-title="toolbar.title.redo" disabled><img src="images/icon-redo.svg" alt=""><span class="tool-button-label" data-i18n="toolbar.label.redo">Redo</span></button>
             <div class="toolbar-separator"></div>
-            <button class="tool-button" data-action="playtest" title="Playtest" data-i18n-title="toolbar.title.playtest"><img src="images/icon-playtest.png"></button>
+            <button class="tool-button"  data-action="playtest" title="Playtest" data-i18n-title="toolbar.title.playtest"><img src="images/icon-playtest.png"><span class="tool-button-label" data-i18n="toolbar.label.playtest">Test</span></button>
             <div class="toolbar-separator"></div>
             <!-- Drawing Tools -->
             <span class="toolbar-label" data-i18n="toolbar.tileset">Tileset:</span>
-            <button class="tool-button tool-draw-mode active" data-tool="pencil" title="Single Tile Tool" data-i18n-title="toolbar.title.singleTile"><img src="images/icon-single.svg" alt=""></button>
-            <button class="tool-button tool-draw-mode" data-tool="rectangle" title="Rectangular Area Tool" data-i18n-title="toolbar.title.rectangle"><img src="images/icon-area.svg" alt=""></button>
-            <button class="tool-button tool-draw-mode" data-tool="circle" title="Circular Area Tool" data-i18n-title="toolbar.title.circle"><img src="images/icon-circular-area.svg" alt=""></button>
-            <button class="tool-button tool-draw-mode" data-tool="fill" title="Fill Tool" data-i18n-title="toolbar.title.fill"><img src="images/icon-fill.svg" alt=""></button>
+            <button class="tool-button"  data-tool="pencil" title="Single Tile Tool" data-i18n-title="toolbar.title.singleTile"><img src="images/icon-single.svg" alt=""><span class="tool-button-label" data-i18n="toolbar.label.pencil">Pencil</span></button>
+            <button class="tool-button"  data-tool="rectangle" title="Rectangular Area Tool" data-i18n-title="toolbar.title.rectangle"><img src="images/icon-area.svg" alt=""><span class="tool-button-label" data-i18n="toolbar.label.rectangle">Rect</span></button>
+            <button class="tool-button"  data-tool="circle" title="Circular Area Tool" data-i18n-title="toolbar.title.circle"><img src="images/icon-circular-area.svg" alt=""><span class="tool-button-label" data-i18n="toolbar.label.circle">Circle</span></button>
+            <button class="tool-button"  data-tool="fill" title="Fill Tool" data-i18n-title="toolbar.title.fill"><img src="images/icon-fill.svg" alt=""><span class="tool-button-label" data-i18n="toolbar.label.fill">Fill</span></button>
             <div class="toolbar-separator"></div>
-            <button class="tool-button" data-action="shadow-pen" title="Shadow Pen (Toggle shadows on tiles)" data-i18n-title="toolbar.title.shadowPen"><img src="images/icon-shadow-pen.svg" alt="" onerror="this.style.display='none';"></button>
-            <button class="tool-button" data-action="eraser" title="Erase Tiles (Layer-Aware)" data-i18n-title="toolbar.title.eraser"><img src="images/icon-erase.svg" alt="" onerror="this.style.display='none';"></button>
+            <button class="tool-button"  data-action="shadow-pen" title="Shadow Pen (Toggle shadows on tiles)" data-i18n-title="toolbar.title.shadowPen"><img src="images/icon-shadow-pen.svg" alt="" onerror="this.style.display='none';"><span class="tool-button-label" data-i18n="toolbar.label.shadow">Shadow</span></button>
+            <button class="tool-button"  data-action="eraser" title="Erase Tiles (Layer-Aware)" data-i18n-title="toolbar.title.eraser"><img src="images/icon-erase.svg" alt="" onerror="this.style.display='none';"><span class="tool-button-label" data-i18n="toolbar.label.eraser">Erase</span></button>
             <div class="toolbar-separator"></div>
             <!-- Layer Selection -->
             <span class="toolbar-label" data-i18n="toolbar.layer">Layer:</span>
-            <button class="tool-button layer-mode active" data-layer="auto" title="Auto-Select Layer (Smart Stacking)" data-i18n-title="toolbar.title.autoLayer"><img src="images/icon-LA.svg" alt="" onerror="this.style.display='none'; this.parentElement.innerHTML='LA';"></button>
-            <button class="tool-button layer-mode" data-layer="0" title="Layer 1" data-i18n-title="toolbar.title.layer1"><img src="images/icon-L1.svg" alt="" onerror="this.style.display='none'; this.parentElement.innerHTML='L1';"></button>
-            <button class="tool-button layer-mode" data-layer="1" title="Layer 2" data-i18n-title="toolbar.title.layer2"><img src="images/icon-L2.svg" alt="" onerror="this.style.display='none'; this.parentElement.innerHTML='L2';"></button>
-            <button class="tool-button layer-mode" data-layer="2" title="Layer 3" data-i18n-title="toolbar.title.layer3"><img src="images/icon-L3.svg" alt="" onerror="this.style.display='none'; this.parentElement.innerHTML='L3';"></button>
-            <button class="tool-button layer-mode" data-layer="3" title="Layer 4" data-i18n-title="toolbar.title.layer4"><img src="images/icon-L4.svg" alt="" onerror="this.style.display='none'; this.parentElement.innerHTML='L4';"></button>
+            <button class="tool-button"  data-layer="auto" title="Auto-Select Layer (Smart Stacking)" data-i18n-title="toolbar.title.autoLayer"><img src="images/icon-LA.svg" alt="" onerror="this.style.display='none'; this.style.display='none';"><span class="tool-button-label" data-i18n="toolbar.label.layerAuto">Auto</span></button>
+            <button class="tool-button"  data-layer="0" title="Layer 1" data-i18n-title="toolbar.title.layer1"><img src="images/icon-L1.svg" alt="" onerror="this.style.display='none'; this.style.display='none';"><span class="tool-button-label" data-i18n="toolbar.label.layer1">L1</span></button>
+            <button class="tool-button"  data-layer="1" title="Layer 2" data-i18n-title="toolbar.title.layer2"><img src="images/icon-L2.svg" alt="" onerror="this.style.display='none'; this.style.display='none';"><span class="tool-button-label" data-i18n="toolbar.label.layer2">L2</span></button>
+            <button class="tool-button"  data-layer="2" title="Layer 3" data-i18n-title="toolbar.title.layer3"><img src="images/icon-L3.svg" alt="" onerror="this.style.display='none'; this.style.display='none';"><span class="tool-button-label" data-i18n="toolbar.label.layer3">L3</span></button>
+            <button class="tool-button"  data-layer="3" title="Layer 4" data-i18n-title="toolbar.title.layer4"><img src="images/icon-L4.svg" alt="" onerror="this.style.display='none'; this.style.display='none';"><span class="tool-button-label" data-i18n="toolbar.label.layer4">L4</span></button>
 
             <!-- Tools Section -->
             <div class="toolbar-separator"></div>
             <span class="toolbar-label" data-i18n="toolbar.tools">Tools:</span>
-            <button class="tool-button" id="toolbar-event-manager-btn" data-action="toggle-event-mode" title="Event Manager" data-i18n-title="toolbar.title.eventManager"><img src="images/icon-event.png" onerror="this.style.display='none'; this.parentElement.innerHTML='EV';"></button>
-            <button class="tool-button" id="toolbar-decor-btn" data-action="toggle-decor-mode" title="Free Tiles: stamp tiles and place events off the grid"><img src="images/icon-free-tiles.svg" alt="" onerror="this.style.display='none'; this.parentElement.innerHTML='FT';"></button>
-            <button class="tool-button" id="toolbar-database-btn" data-action="open-database" title="Database" data-i18n-title="toolbar.title.database">
-                <img src="images/icon-database.svg" alt="" onerror="this.style.display='none'; this.parentElement.innerHTML='DB';">
-            </button>
-            <button class="tool-button" id="toolbar-plugins-btn" data-action="open-plugins" title="Plugins" data-i18n-title="toolbar.title.plugins">
-                <img src="images/icon-plugins.svg" alt="" onerror="this.style.display='none'; this.parentElement.innerHTML='PL';">
-            </button>
-            <button class="tool-button" id="toolbar-resource-manager-btn" data-action="resource-manager" title="Resource Manager" data-i18n-title="menu.resourceManager">
-                <img src="images/icon-resource-manager.svg" alt="" onerror="this.style.display='none'; this.parentElement.innerHTML='RM';">
-            </button>
-            <button class="tool-button" data-action="audio-player" title="Audio Player" data-i18n-title="toolbar.title.audioPlayer"><img src="images/icon-speaker.svg" alt="" onerror="this.style.display='none'; this.parentElement.innerHTML='♪';"></button>
-            <button class="tool-button" data-action="build-tool" title="Build in the world: pieces, shapes, screens and lights" data-i18n-title="toolbar.title.build"><img src="images/icon-build.svg" alt="" onerror="this.style.display='none'; this.parentElement.innerHTML='BD';"></button>
-            <button class="tool-button" data-action="lighting-tool" title="Lighting Tool" data-i18n-title="toolbar.title.lighting"><img src="images/icon-lighting.svg" alt="" onerror="this.style.display='none'; this.parentElement.innerHTML='LT';"></button>
-            <button class="tool-button" data-action="media-surfaces" title="Media Surfaces" aria-label="Media Surfaces" data-i18n-title="menu.mediaSurfaces" data-i18n-aria="menu.mediaSurfaces"><img src="images/icon-media-surfaces.svg" alt=""></button>
+            <button class="tool-button"  id="toolbar-event-manager-btn" data-action="toggle-event-mode" title="Event Manager" data-i18n-title="toolbar.title.eventManager"><img src="images/icon-event.png" onerror="this.style.display='none'; this.style.display='none';"><span class="tool-button-label" data-i18n="toolbar.label.events">Events</span></button>
+            <button class="tool-button"  id="toolbar-decor-btn" data-action="toggle-decor-mode" title="Free placement: pick a tile in the palette, click the map to stamp it anywhere; events place freely in Event mode"><img src="images/icon-free-tiles.svg" alt="" onerror="this.style.display='none'; this.style.display='none';"><span class="tool-button-label" data-i18n="toolbar.label.freeTiles">Place</span></button>
+            <button class="tool-button"  id="toolbar-database-btn" data-action="open-database" title="Database" data-i18n-title="toolbar.title.database">
+                <img src="images/icon-database.svg" alt="" onerror="this.style.display='none'; this.style.display='none';">
+            <span class="tool-button-label" data-i18n="toolbar.label.database">Database</span></button>
+            <button class="tool-button"  id="toolbar-plugins-btn" data-action="open-plugins" title="Plugins" data-i18n-title="toolbar.title.plugins">
+                <img src="images/icon-plugins.svg" alt="" onerror="this.style.display='none'; this.style.display='none';">
+            <span class="tool-button-label" data-i18n="toolbar.label.plugins">Plugins</span></button>
+            <button class="tool-button"  id="toolbar-resource-manager-btn" data-action="resource-manager" title="Resource Manager" data-i18n-title="menu.resourceManager">
+                <img src="images/icon-resource-manager.svg" alt="" onerror="this.style.display='none'; this.style.display='none';">
+            <span class="tool-button-label" data-i18n="toolbar.label.resources">Assets</span></button>
+            <button class="tool-button"  data-action="audio-player" title="Audio Player" data-i18n-title="toolbar.title.audioPlayer"><img src="images/icon-speaker.svg" alt="" onerror="this.style.display='none'; this.style.display='none';"><span class="tool-button-label" data-i18n="toolbar.label.audio">Audio</span></button>
+            <button class="tool-button"  data-action="build-tool" title="Build in the world: pieces, shapes, screens and lights" data-i18n-title="toolbar.title.build"><img src="images/icon-build.svg" alt="" onerror="this.style.display='none'; this.style.display='none';"><span class="tool-button-label" data-i18n="toolbar.label.build">Build</span></button>
+            <button class="tool-button"  data-action="lighting-tool" title="Lighting Tool" data-i18n-title="toolbar.title.lighting"><img src="images/icon-lighting.svg" alt="" onerror="this.style.display='none'; this.style.display='none';"><span class="tool-button-label" data-i18n="toolbar.label.lighting">Light</span></button>
+            <button class="tool-button"  data-action="media-surfaces" title="Media Surfaces" aria-label="Media Surfaces" data-i18n-title="menu.mediaSurfaces" data-i18n-aria="menu.mediaSurfaces"><img src="images/icon-media-surfaces.svg" alt=""><span class="tool-button-label" data-i18n="toolbar.label.media">Media</span></button>
 
             <!-- Forge Section -->
             <div class="toolbar-separator"></div>
             <span class="toolbar-label" data-i18n="toolbar.forge">Forge:</span>
-            <button class="tool-button" data-action="forge-launcher" title="Forge - Development Tool Suite" data-i18n-title="toolbar.title.forgeLauncher"><img src="images/icon-forge.svg" alt="" onerror="this.style.display='none'; this.parentElement.innerHTML='FG';"></button>
+            <button class="tool-button"  data-action="forge-launcher" title="Forge - Development Tool Suite" data-i18n-title="toolbar.title.forgeLauncher"><img src="images/icon-forge.svg" alt="" onerror="this.style.display='none'; this.style.display='none';"><span class="tool-button-label" data-i18n="toolbar.label.forge">Forge</span></button>
         </div>
 
         <!-- Main Content -->
@@ -331,6 +331,10 @@
                                 <label class="map-info-item map-video-previews" title="Show media surface previews" data-i18n-title="toolbar.title.videoPreviews">
                                     <input id="map-video-previews" type="checkbox" checked aria-label="Show media surface previews" data-i18n-aria="toolbar.title.videoPreviews">
                                     <span data-i18n="workspace.video">Video</span>
+                                </label>
+                                <label class="map-info-item map-pixel-movement" title="Pixel movement on this map" data-i18n-title="toolbar.title.pixelMovement">
+                                    <input id="map-pixel-movement" type="checkbox" aria-label="Pixel movement on this map" data-i18n-aria="toolbar.title.pixelMovement">
+                                    <span data-i18n="workspace.pixel">Pixel</span>
                                 </label>
                                 <span class="map-info-item"><span data-i18n="workspace.zoom">Zoom:</span> <span class="map-info-value" id="map-zoom">100%</span></span>
                                 <span class="map-info-item">(<span class="map-info-value" id="map-coordinates">--,--</span>)</span>

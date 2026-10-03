@@ -231,6 +231,31 @@
             flex-shrink: 0;
         }
 
+        /* Icon-over-label layout: every toolbar button names itself, so the
+           pictograms never have to be guessed. */
+        #toolbar .tool-button {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            padding: 4px 5px 3px;
+        }
+
+        #toolbar .tool-button-label {
+            font-size: 10px;
+            line-height: 1;
+            color: var(--color-text-muted);
+            max-width: 58px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        #toolbar .tool-button:hover .tool-button-label,
+        #toolbar .tool-button.active .tool-button-label {
+            color: var(--color-text-strong);
+        }
+
         #toolbar .tool-button img,
         #toolbar .tool-button svg {
             width: var(--toolbar-icon-size);
