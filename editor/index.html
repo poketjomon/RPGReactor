@@ -721,6 +721,19 @@
                                 <div class="map-props-physics-note" data-i18n-text-source="Blank uses the project's physics (Database › Controls)." style="font-size: 11px; color: var(--color-text-muted); line-height: 1.4;">Blank uses the project's physics (Database › Controls).</div>
                             </div>
                         </div>
+                        <!-- 2D pixel features: pixel movement and free placement (runtime/reactor_pixel.js) -->
+                        <div class="map-props-card">
+                            <div class="lit-section-header map-props-card-header" data-i18n-text-source="2D Pixel">2D Pixel</div>
+                            <label class="map-props-label" style="display: flex; align-items: center; cursor: pointer;">
+                                <input type="checkbox" id="map-pixel-checkbox" style="margin-right: 6px;">
+                                <span data-i18n-text-source="Pixel movement">Pixel movement</span>
+                            </label>
+                            <label class="map-props-label" style="display: flex; align-items: center; cursor: pointer;">
+                                <input type="checkbox" id="map-freeplace-checkbox" style="margin-right: 6px;">
+                                <span data-i18n-text-source="Free placement">Free placement</span>
+                            </label>
+                            <div class="map-props-physics-note" data-i18n-text-source="On this 2D map the player walks in pixels and events can be placed off the grid. Off keeps the stock tile steps." style="font-size: 11px; color: var(--color-text-muted); line-height: 1.4;">On this 2D map the player walks in pixels and events can be placed off the grid. Off keeps the stock tile steps.</div>
+                        </div>
                         <!-- Note Section -->
                         <div class="map-props-card" style="flex: 1;">
                             <div class="lit-section-header map-props-card-header" data-i18n="mapProps.note">Note</div>
@@ -989,6 +1002,7 @@
     <script src="src/utils/TilesetSheets.js"></script>
     <script src="src/utils/TileMetrics.js"></script>
     <script src="src/utils/MapElevation.js"></script>
+    <script src="src/utils/MapPixelTags.js"></script>
     <script src="src/utils/EventPreviewModels.js"></script>
     <script src="src/utils/MapObjects3D.js"></script>
     <script src="src/utils/Tileset3DClass.js"></script>

@@ -2076,6 +2076,9 @@ class ProjectController {
         // 3D
         this.populateMap3DForm(mapData);
 
+        // 2D pixel features (pixel movement, free placement)
+        this.populateMapPixelForm(mapData);
+
         // Note, less the <3d> tag the 3D checkbox stands for.
         document.getElementById('map-note-textarea').value = this.noteWithout3D(mapData.note);
 
@@ -2487,12 +2490,22 @@ class ProjectController {
         });
     }
 
-    /** The note with the `<3d>` tag taken out; the 3D checkbox shows it. */
+    /** The note with the tags the checkboxes stand for (<3d>, <pixel>, <freeplace>) taken out. */
     noteWithout3D(note) {
         const elevation = this.mapElevation();
-        const text = typeof note === 'string' ? note : '';
-        if (!elevation) return text;
-        return text.replace(/<3d>/gi, '').replace(/\n{3,}/g, '\n\n').trim();
+        let text = typeof note === 'string' ? note : '';
+        if (elevation) text = text.replace(/<3d>/gi, '');
+        if (typeof RRMapPixelTags !== 'undefined' && RRMapPixelTags) text = RRMapPixelTags.noteWithoutTags(text);
+        return text.replace(/\n{3,}/g, '\n\n').trim();
+    }
+
+    /** Fill the 2D pixel section: pixel movement and free placement. */
+    populateMapPixelForm(mapData) {
+        const pixel = document.getElementById('map-pixel-checkbox');
+        const freeplace = document.getElementById('map-freeplace-checkbox');
+        if (typeof RRMapPixelTags === 'undefined' || !RRMapPixelTags) return;
+        if (pixel) pixel.checked = RRMapPixelTags.hasPixel(mapData);
+        if (freeplace) freeplace.checked = RRMapPixelTags.hasFreePlacement(mapData);
     }
 
     /** Fill the 3D section: the switch, the room's height and its images. */
@@ -3346,6 +3359,15 @@ class ProjectController {
         if (wants3D) {
             if (elevation) elevation.addNote(mapData);
             else mapData.note = `${mapData.note}${mapData.note ? '\n' : ''}<3d>`;
+        }
+
+        // 2D pixel features: the checkboxes are the switches; a tag typed into
+        // the note counts too, so the two can never disagree in the saved map.
+        if (typeof RRMapPixelTags !== 'undefined' && RRMapPixelTags) {
+            const wantsPixel = !!document.getElementById('map-pixel-checkbox')?.checked || /<pixel(?::[^>]*)?>/i.test(noteText);
+            const wantsFreePlacement = !!document.getElementById('map-freeplace-checkbox')?.checked || /<freeplace>/i.test(noteText);
+            RRMapPixelTags.setPixel(mapData, wantsPixel);
+            RRMapPixelTags.setFreePlacement(mapData, wantsFreePlacement);
         }
 
         // Initialize data array if creating new map

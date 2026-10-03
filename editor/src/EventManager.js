@@ -508,8 +508,11 @@ class EventManager {
             // Update selection to this tile
             this.selectTile(tileX, tileY);
 
-            // Check if there's an event at this position
-            const eventAtPos = this.getEventAt(tileX, tileY);
+            // Check if there's an event at this position (by pixel point when
+            // the map places events off the grid)
+            const eventAtPos = this.freePlacementEnabled()
+                ? this.getEventAtPoint(pos.x, pos.y)
+                : this.getEventAt(tileX, tileY);
 
             // Use the original mouse event position for context menu
             const mouseX = event.data.originalEvent.clientX;
@@ -604,7 +607,7 @@ class EventManager {
 
         if (isDoubleClick) {
             this.resetMapClickTracking();
-            this.activateEventAt(tileX, tileY);
+            this.activateEventAt(tileX, tileY, pos.x, pos.y);
             return;
         }
 
@@ -613,14 +616,21 @@ class EventManager {
         this._lastMapClickY = tileY;
         this.selectTile(tileX, tileY);
 
-        const eventAtPos = this.getEventAt(tileX, tileY) || null;
+        // Free placement picks by pixel point (events may share a cell);
+        // the stock grid keeps its one-event-per-cell lookup.
+        const eventAtPos = this.freePlacementEnabled()
+            ? this.getEventAtPoint(pos.x, pos.y)
+            : (this.getEventAt(tileX, tileY) || null);
         if (!eventAtPos && this.tilesetPaletteViewer) {
             const selectedTiles = this.tilesetPaletteViewer.getSelectedTiles();
             if (selectedTiles && selectedTiles.length > 0) {
                 const tile = selectedTiles[0];
                 const tileId = this.convertToTileId(tile.layer, tile.x, tile.y);
                 if (tileId > 0) {
-                    this.createNewEventWithTileset(tileX, tileY, tileId);
+                    this.createNewEventWithTileset(tileX, tileY, tileId,
+                        this.freePlacementEnabled()
+                            ? { x: pos.x - tileX * this.tilemapManager.TILE_WIDTH, y: pos.y - tileY * this.tilemapManager.TILE_HEIGHT }
+                            : null);
                     this.tilesetPaletteViewer.clearSelection();
                     return;
                 }
@@ -645,15 +655,23 @@ class EventManager {
             currentTime - this._lastMapClickTime <= EVENT_DOUBLE_CLICK_INTERVAL;
     }
 
-    activateEventAt(tileX, tileY) {
+    activateEventAt(tileX, tileY, pixelX, pixelY) {
         if (!this.eventMode || !this.currentMap ||
             !Number.isInteger(tileX) || !Number.isInteger(tileY) ||
             tileX < 0 || tileX >= this.currentMap.width ||
             tileY < 0 || tileY >= this.currentMap.height) return false;
 
-        const eventAtPos = this.getEventAt(tileX, tileY);
+        // With a pointer position and free placement, pick by pixel point so
+        // the top event of a stack is the one that opens.
+        const byPoint = Number.isFinite(pixelX) && Number.isFinite(pixelY) && this.freePlacementEnabled();
+        const eventAtPos = byPoint ? this.getEventAtPoint(pixelX, pixelY) : this.getEventAt(tileX, tileY);
         if (eventAtPos) this.editEvent(eventAtPos);
-        else this.createNewEvent(tileX, tileY);
+        else {
+            const offset = byPoint
+                ? { x: pixelX - tileX * this.tilemapManager.TILE_WIDTH, y: pixelY - tileY * this.tilemapManager.TILE_HEIGHT }
+                : null;
+            this.createNewEvent(tileX, tileY, offset);
+        }
         return true;
     }
 
@@ -759,14 +777,22 @@ class EventManager {
         // Check if there's an event at this position
         const eventAtPos = this.getEventAt(this.selectedTileX, this.selectedTileY);
 
+        // The highlight rides the selected event's free-placement offset, if any.
+        const selected = this.selectedEvent &&
+            this.selectedEvent.x === this.selectedTileX && this.selectedEvent.y === this.selectedTileY
+            ? this.selectedEvent : eventAtPos;
+        const selectedOffset = this.eventOffsetOf(selected);
+        const highlightX = this.selectedTileX * tileWidth + selectedOffset.x;
+        const highlightY = this.selectedTileY * tileHeight + selectedOffset.y;
+
         // Event-mode targets use the editor's gold selection color.
         const color = 0xFFD700;
         const alpha = eventAtPos ? 0.35 : 0.3;
 
         // PIXI v8 API - draw filled rectangle
         this.selectionHighlight.rect(
-            this.selectedTileX * tileWidth,
-            this.selectedTileY * tileHeight,
+            highlightX,
+            highlightY,
             tileWidth,
             tileHeight
         );
@@ -774,8 +800,8 @@ class EventManager {
 
         // Border (thicker for selection) - PIXI v8 API
         this.selectionHighlight.rect(
-            this.selectedTileX * tileWidth,
-            this.selectedTileY * tileHeight,
+            highlightX,
+            highlightY,
             tileWidth,
             tileHeight
         );
@@ -836,10 +862,10 @@ class EventManager {
             /Mac|iPhone|iPad|iPod/.test(navigator.platform || navigator.userAgent || '')
             ? 'Cmd' : 'Ctrl';
         const menuItems = [
-            { label: this._t('eventCtx.newEvent'), shortcut: 'Enter', action: createEventAction, enabled: !eventAtPos },
+            { label: this._t('eventCtx.newEvent'), shortcut: 'Enter', action: createEventAction, enabled: !eventAtPos || this.freePlacementEnabled() },
             { label: this._t('eventCtx.editEvent'), shortcut: 'Enter', action: () => this.editEvent(eventAtPos), enabled: !!eventAtPos },
             { label: this._t('eventCtx.previewEvent'), enabled: !!eventAtPos, submenu: this._eventPreviewMenu(eventAtPos) },
-            { label: this._t('quickEvent.title'), enabled: !eventAtPos, submenu: [
+            { label: this._t('quickEvent.title'), enabled: !eventAtPos || this.freePlacementEnabled(), submenu: [
                 { label: this._t('quickEvent.transfer'), action: () => this.showQuickEventDialog('transfer', tileX, tileY) },
                 { label: this._t('quickEvent.door'), action: () => this.showQuickEventDialog('door', tileX, tileY) },
                 { label: this._t('quickEvent.treasure'), action: () => this.showQuickEventDialog('treasure', tileX, tileY) },
@@ -1059,6 +1085,50 @@ class EventManager {
         );
     }
 
+    /** Whether this map lets events sit off the grid (the <freeplace> tag). */
+    freePlacementEnabled() {
+        return typeof RRMapPixelTags !== 'undefined' && RRMapPixelTags
+            ? RRMapPixelTags.hasFreePlacement(this.currentMap)
+            : false;
+    }
+
+    /** An event's pixel offset from its cell origin, in map pixels. */
+    eventOffsetOf(event) {
+        const offset = event && event.rrOffset;
+        if (!offset) return { x: 0, y: 0 };
+        return { x: Math.round(Number(offset.x) || 0), y: Math.round(Number(offset.y) || 0) };
+    }
+
+    /** Write an event's pixel offset; zero-zero takes the key back off. */
+    setEventOffset(event, x, y) {
+        if (!event) return;
+        const ox = Math.round(Number(x) || 0);
+        const oy = Math.round(Number(y) || 0);
+        if (!ox && !oy) delete event.rrOffset;
+        else event.rrOffset = { x: ox, y: oy };
+    }
+
+    /**
+     * The event whose sprite covers a map pixel point, topmost last drawn.
+     * Free placement lets events share a cell, so a cell lookup is not
+     * enough: the sprite is its cell shifted by the event's own offset.
+     */
+    getEventAtPoint(px, py) {
+        if (!this.currentMap || !this.currentMap.events) return null;
+        if (!Number.isFinite(px) || !Number.isFinite(py)) return null;
+        const tileWidth = this.tilemapManager.TILE_WIDTH;
+        const tileHeight = this.tilemapManager.TILE_HEIGHT;
+        let found = null;
+        for (const event of this.currentMap.events) {
+            if (!event) continue;
+            const offset = this.eventOffsetOf(event);
+            const left = event.x * tileWidth + offset.x;
+            const top = event.y * tileHeight + offset.y;
+            if (px >= left && px < left + tileWidth && py >= top && py < top + tileHeight) found = event;
+        }
+        return found;
+    }
+
     // Select an event
     selectEvent(event) {
         const previousEvent = this.selectedEvent;
@@ -1145,10 +1215,12 @@ class EventManager {
         this.isDragging = true;
         this.draggedEvent = event;
 
-        // Calculate offset from event position to mouse position
+        // Calculate offset from event position to mouse position (the visual
+        // origin includes the event's free-placement offset, if any)
         const pos = pointerEvent.data.getLocalPosition(this.tilemapManager.container);
-        const eventPixelX = event.x * this.tilemapManager.TILE_WIDTH;
-        const eventPixelY = event.y * this.tilemapManager.TILE_HEIGHT;
+        const eventOffset = this.eventOffsetOf(event);
+        const eventPixelX = event.x * this.tilemapManager.TILE_WIDTH + eventOffset.x;
+        const eventPixelY = event.y * this.tilemapManager.TILE_HEIGHT + eventOffset.y;
 
         this.dragOffset.x = pos.x - eventPixelX;
         this.dragOffset.y = pos.y - eventPixelY;
@@ -1170,6 +1242,12 @@ class EventManager {
         // Calculate new tile position based on mouse position
         const newPixelX = pos.x - this.dragOffset.x;
         const newPixelY = pos.y - this.dragOffset.y;
+
+        if (this.freePlacementEnabled()) {
+            this.updateDragFree(newPixelX, newPixelY);
+            return;
+        }
+
         const newTileX = Math.floor((newPixelX + this.tilemapManager.TILE_WIDTH / 2) / this.tilemapManager.TILE_WIDTH);
         const newTileY = Math.floor((newPixelY + this.tilemapManager.TILE_HEIGHT / 2) / this.tilemapManager.TILE_HEIGHT);
 
@@ -1230,6 +1308,46 @@ class EventManager {
 
         // Final render to update appearance
         this.renderEvents();
+    }
+
+    /**
+     * Free-placement drag: the sprite follows the pointer in pixels; the
+     * cell is where its origin landed and the offset is the remainder.
+     * Cells may be shared, so nothing here asks whether one is taken.
+     */
+    updateDragFree(newPixelX, newPixelY) {
+        const tileWidth = this.tilemapManager.TILE_WIDTH;
+        const tileHeight = this.tilemapManager.TILE_HEIGHT;
+        const newTileX = Math.floor(newPixelX / tileWidth);
+        const newTileY = Math.floor(newPixelY / tileHeight);
+        if (newTileX < 0 || newTileX >= this.currentMap.width ||
+            newTileY < 0 || newTileY >= this.currentMap.height) return;
+        const offX = Math.round(newPixelX - newTileX * tileWidth);
+        const offY = Math.round(newPixelY - newTileY * tileHeight);
+        const current = this.eventOffsetOf(this.draggedEvent);
+        if (newTileX === this.draggedEvent.x && newTileY === this.draggedEvent.y &&
+            offX === current.x && offY === current.y) return;
+        // First real movement: capture the pre-drag state for undo.
+        if (!this._dragStateSaved) {
+            this._dragStateSaved = true;
+            this.resetMapClickTracking();
+            this.saveState();
+        }
+        this.draggedEvent.x = newTileX;
+        this.draggedEvent.y = newTileY;
+        this.setEventOffset(this.draggedEvent, offX, offY);
+        this.selectTile(newTileX, newTileY);
+
+        // Move just the dragged sprite; the final renderEvents() happens
+        // once in finishDragging.
+        const sprite = this.eventSprites.get(this.draggedEvent.id);
+        if (sprite) {
+            sprite.x = newTileX * tileWidth + offX;
+            sprite.y = newTileY * tileHeight + offY;
+            this.updateSelectionHighlight();
+        } else {
+            this.renderEvents();
+        }
     }
 
     // Convert layer, x, y to RPG Maker tileId
@@ -1656,14 +1774,17 @@ class EventManager {
         });
     }
 
-    createNewEventWithTileset(x, y, tileId) {
+    createNewEventWithTileset(x, y, tileId, offset = null) {
         console.debug(`createNewEventWithTileset called: position (${x}, ${y}), tileId: ${tileId}`);
 
         if (!this.currentMap) {
             console.warn('No map loaded');
             return null;
         }
-        if (x < 0 || x >= this.currentMap.width || y < 0 || y >= this.currentMap.height || this.getEventAt(x, y)) {
+        // Free placement lets events share a cell; the one-per-cell rule is
+        // a stock-grid rule only.
+        if (x < 0 || x >= this.currentMap.width || y < 0 || y >= this.currentMap.height ||
+            (!this.freePlacementEnabled() && this.getEventAt(x, y))) {
             return null;
         }
 
@@ -1719,6 +1840,7 @@ class EventManager {
             x: x,
             y: y
         };
+        if (offset) this.setEventOffset(newEvent, offset.x, offset.y);
 
         console.debug('Created event with image data:', JSON.stringify(newEvent.pages[0].image, null, 2));
 
@@ -1730,12 +1852,13 @@ class EventManager {
     }
 
     // Create new event
-    createNewEvent(x, y) {
+    createNewEvent(x, y, offset = null) {
         if (!this.currentMap) {
             console.warn('No map loaded');
             return null;
         }
-        if (x < 0 || x >= this.currentMap.width || y < 0 || y >= this.currentMap.height || this.getEventAt(x, y)) {
+        if (x < 0 || x >= this.currentMap.width || y < 0 || y >= this.currentMap.height ||
+            (!this.freePlacementEnabled() && this.getEventAt(x, y))) {
             return null;
         }
 
@@ -1789,6 +1912,7 @@ class EventManager {
             x: x,
             y: y
         };
+        if (offset) this.setEventOffset(newEvent, offset.x, offset.y);
 
         console.debug(`Created new event ${newEvent.name} at (${x}, ${y})`);
 
@@ -1949,8 +2073,9 @@ class EventManager {
             return;
         }
 
-        // Check if there's already an event at this position
-        if (this.getEventAt(x, y)) {
+        // Check if there's already an event at this position (free placement
+        // lets events share a cell, so the rule is the stock grid's alone)
+        if (this.getEventAt(x, y) && !this.freePlacementEnabled()) {
             alert(tt('There is already an event at this position.'));
             return;
         }
@@ -2826,8 +2951,10 @@ class EventManager {
     // Create sprite for an event
     createEventSprite(event) {
         const container = new PIXI.Container();
-        container.x = event.x * this.tilemapManager.TILE_WIDTH;
-        container.y = event.y * this.tilemapManager.TILE_HEIGHT;
+        // Free placement: the sprite draws where the map put it, pixels and all.
+        const eventOffset = this.eventOffsetOf(event);
+        container.x = event.x * this.tilemapManager.TILE_WIDTH + eventOffset.x;
+        container.y = event.y * this.tilemapManager.TILE_HEIGHT + eventOffset.y;
 
         const isDragging = this.isDragging && this.draggedEvent && this.draggedEvent.id === event.id;
         const isSelected = this.selectedEvent && this.selectedEvent.id === event.id;
