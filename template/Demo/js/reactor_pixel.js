@@ -778,10 +778,15 @@
     };
 
     /**
-     * The map's free tile stamps, drawn into the tilemap's own scrolled
-     * layers: below-characters stamps live with the lower tiles, above-
-     * characters stamps with the upper ones, so each depthsorts exactly
-     * like the tiles around it and follows the camera for free.
+     * The map's free tile stamps, hung directly off the tilemap — the same
+     * perch the engine gives character sprites — sharing its z-ordered
+     * display list (1 draws below the characters, 5 above them; screenZ()
+     * mints the same constants). They must never enter _lowerLayer/
+     * _upperLayer: those are CombinedLayers whose setBitmaps/clear/addRect
+     * treat every child as a Tilemap.Layer. Our own core guards that, but
+     * this file also gets packaged as a plugin for stock-MZ projects, whose
+     * core does not — a plain sprite child there crashes the first cold
+     * tileset load (child.setBitmaps is not a function).
      */
     ReactorPixel.createDecorSprites = function(spriteset) {
         const mapData = typeof $dataMap !== "undefined" ? $dataMap : null;
@@ -794,7 +799,11 @@
         if (!decor || !decor.length || typeof Sprite === "undefined") return;
         if (typeof Reactor3D !== "undefined" && Reactor3D.isMap3D && Reactor3D.isMap3D(mapData)) return;
         const tilemap = spriteset && spriteset._tilemap;
-        if (!tilemap || !tilemap._lowerLayer || !tilemap._upperLayer) return;
+        if (!tilemap || typeof tilemap.addChild !== "function") return;
+        spriteset._reactorDecorSprites = [];
+        if (tilemap.horizontalWrap || tilemap.verticalWrap) {
+            console.warn("ReactorPixel: looping map — decor stamps do not seam-wrap yet.");
+        }
         for (const entry of decor) {
             if (!entry || !Number.isFinite(entry.x) || !Number.isFinite(entry.y)) continue;
             const source = this.decorTileSource(entry.tileId);
@@ -802,9 +811,26 @@
             const sprite = new Sprite();
             sprite.bitmap = source.bitmap;
             sprite.setFrame(source.sx, source.sy, source.width, source.height);
-            sprite.x = entry.x;
-            sprite.y = entry.y;
-            (entry.above ? tilemap._upperLayer : tilemap._lowerLayer).addChild(sprite);
+            sprite._reactorMapX = entry.x;
+            sprite._reactorMapY = entry.y;
+            sprite.z = entry.above ? 5 : 1;
+            tilemap.addChild(sprite);
+            spriteset._reactorDecorSprites.push(sprite);
+        }
+        ReactorPixel.syncDecorSprites(spriteset);
+    };
+
+    // Math.ceil mirrors Tilemap.updateTransform, so a stamp stays glued to
+    // the tile layers to the pixel while the camera scrolls.
+    ReactorPixel.syncDecorSprites = function(spriteset) {
+        const tilemap = spriteset && spriteset._tilemap;
+        const sprites = spriteset && spriteset._reactorDecorSprites;
+        if (!tilemap || !tilemap.origin || !sprites || !sprites.length) return;
+        const ox = Math.ceil(tilemap.origin.x);
+        const oy = Math.ceil(tilemap.origin.y);
+        for (const sprite of sprites) {
+            sprite.x = sprite._reactorMapX - ox;
+            sprite.y = sprite._reactorMapY - oy;
         }
     };
 
@@ -844,6 +870,7 @@
                 ReactorPixel.debugBodies = !ReactorPixel.debugBodies;
             }
             ReactorPixel.updateDebugOverlay(this);
+            ReactorPixel.syncDecorSprites(this);
         };
     }
 

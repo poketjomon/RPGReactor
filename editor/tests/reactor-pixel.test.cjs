@@ -299,6 +299,43 @@ test('decor stamps resolve plain-sheet and A5 tiles, and refuse autotiles', () =
     assert.equal(c.ReactorPixel.decorTileSource(1536 + 128), null);
 });
 
+test('decor stamps ride the tilemap itself and track the camera', () => {
+    const c = sandbox({ note: '<freeplace>' });
+    c.$dataMap.reactor3d = { decor: [
+        { tileId: 138, x: 472, y: 528, above: false },
+        { tileId: 138, x: 100, y: 40, above: true }
+    ] };
+    c.$gameMap.tileset = () => ({ tilesetNames: ['a1', 'a2', 'a3', 'a4', 'a5', 'b', 'c', 'd', 'e'] });
+    c.ImageManager = { loadTileset: name => ({ name }) };
+    c.Tilemap = { TILE_ID_A5: 1536 };
+    c.Sprite = class Sprite {
+        setFrame(sx, sy, w, h) { this.frame = [sx, sy, w, h]; }
+    };
+    // A deliberately stock-shaped tilemap: no _lowerLayer/_upperLayer at
+    // all. Stamping must not need them — sprite children belong on the
+    // tilemap, where the engine's z sort finds them.
+    const tilemap = { origin: { x: 10.4, y: 20.9 }, children: [], addChild(s) { this.children.push(s); } };
+    const spriteset = { _tilemap: tilemap };
+    c.ReactorPixel.createDecorSprites(spriteset);
+    assert.equal(tilemap.children.length, 2, 'both stamps on the tilemap');
+    const [below, above] = tilemap.children;
+    assert.equal(below.z, 1, 'below-characters depth');
+    assert.equal(above.z, 5, 'above-characters depth');
+    assert.ok(below.frame, 'the tile frame was set');
+    // Math.ceil matches Tilemap.updateTransform: 10.4 -> 11, 20.9 -> 21.
+    assert.equal(below.x, 472 - 11);
+    assert.equal(below.y, 528 - 21);
+    assert.equal(above.x, 100 - 11);
+    assert.equal(above.y, 40 - 21);
+    // The camera moves; the next sync repositions every stamp.
+    tilemap.origin = { x: 96, y: 48 };
+    c.ReactorPixel.syncDecorSprites(spriteset);
+    assert.equal(below.x, 472 - 96);
+    assert.equal(below.y, 528 - 48);
+    assert.equal(above.x, 100 - 96);
+    assert.equal(above.y, 40 - 48);
+});
+
 test('a click pathfinds around a wall, and gives up when nothing gets through', () => {
     const c = sandbox();
     // A wall column at x=3 with one gap at y=5.
