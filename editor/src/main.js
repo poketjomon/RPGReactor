@@ -530,8 +530,34 @@ class RPGReactor {
             }
         });
 
-        // Auto-load last opened project
-        await this.projectController.checkAutoLoadProject();
+        // A project path on the command line opens directly:
+        //   nw . /path/to/project   (or pass it through the launcher script).
+        // NW 0.117's directory chooser can abort the whole app on macOS
+        // (file_chooser_impl.cc "Check failed: !base_dir.empty()"), so a
+        // scripted, dialog-free open is also the reliable one.
+        const commandLineProject = typeof nw !== 'undefined' && nw.App && Array.isArray(nw.App.argv)
+            ? nw.App.argv.map(String).find(candidate => {
+                if (!candidate || candidate.startsWith('-')) return false;
+                try {
+                    const path = require('path');
+                    const fs = require('fs');
+                    const resolved = path.resolve(candidate);
+                    // The editor's own folder carries a package.json too; a
+                    // game project is a folder with its data/ beside it.
+                    if (resolved === path.resolve(process.cwd() || '')) return false;
+                    return fs.existsSync(resolved) && fs.statSync(resolved).isDirectory()
+                        && fs.existsSync(path.join(resolved, 'package.json'))
+                        && fs.existsSync(path.join(resolved, 'data'));
+                } catch (e) { return false; }
+            })
+            : null;
+        if (commandLineProject) {
+            console.info(`Opening project from the command line: ${commandLineProject}`);
+            await this.projectController.openProjectAtPath(require('path').resolve(commandLineProject));
+        } else {
+            // Auto-load last opened project
+            await this.projectController.checkAutoLoadProject();
+        }
 
         // Sync current project with audio player if a project was loaded
         if (this.projectController.isProjectLoaded()) {
