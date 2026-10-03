@@ -18,9 +18,11 @@
 // Free placement — the map note tag `<freeplace>` switches the editor over
 // (see the editor side); the runtime half is smaller: an event may carry
 // `rrOffset: { x, y }` in pixels, and its sprite is drawn shifted by that
-// much. The event's cell stays where the data says — triggers, collision
-// and everything grid-shaped read the cell; the pixels are presentation.
-// Stock RPG Maker ignores the key, so the map still round-trips.
+// much, and the map may carry an `rrDecor` list of `{ tileId, x, y, above }`
+// free tile stamps drawn in the tilemap's own scrolled layers. The event's
+// cell stays where the data says — triggers, collision and everything
+// grid-shaped read the cell; the pixels are presentation.
+// Stock RPG Maker ignores the keys, so the map still round-trips.
 //
 // Both are 2D-only by design: on a 3D map the whole module stands down.
 //=============================================================================
@@ -470,6 +472,64 @@
                 this._reactorOffsetX = Math.round(Number(offset.x) || 0);
                 this._reactorOffsetY = Math.round(Number(offset.y) || 0);
             }
+        };
+    }
+
+    /** The sheet bitmap and source rect of a stampable tile, or null. */
+    ReactorPixel.decorTileSource = function(tileId) {
+        if (typeof $gameMap === "undefined" || !$gameMap || typeof ImageManager === "undefined") return null;
+        const tileset = $gameMap.tileset();
+        if (!tileset || !tileset.tilesetNames) return null;
+        const tw = $gameMap.tileWidth();
+        const th = $gameMap.tileHeight();
+        const a5 = typeof Tilemap !== "undefined" && Tilemap.TILE_ID_A5 !== undefined ? Tilemap.TILE_ID_A5 : 1536;
+        if (tileId >= a5 && tileId < a5 + 128) {
+            const bitmap = ImageManager.loadTileset(tileset.tilesetNames[4]);
+            if (!bitmap) return null;
+            const local = tileId - a5;
+            return { bitmap, sx: (local % 8) * tw, sy: Math.floor(local / 8) * th, width: tw, height: th };
+        }
+        // Autotile sheets (2048 and up) have no lone shape without neighbours,
+        // so the decor layer stamps the plain sheets only.
+        if (tileId < 0 || tileId >= a5) return null;
+        const bitmap = ImageManager.loadTileset(tileset.tilesetNames[5 + Math.floor(tileId / 256)]);
+        if (!bitmap) return null;
+        const sx = ((Math.floor(tileId / 128) % 2) * 8 + (tileId % 8)) * tw;
+        const sy = (Math.floor((tileId % 256) / 8) % 16) * th;
+        return { bitmap, sx, sy, width: tw, height: th };
+    };
+
+    /**
+     * The map's free tile stamps, drawn into the tilemap's own scrolled
+     * layers: below-characters stamps live with the lower tiles, above-
+     * characters stamps with the upper ones, so each depthsorts exactly
+     * like the tiles around it and follows the camera for free.
+     */
+    ReactorPixel.createDecorSprites = function(spriteset) {
+        const mapData = typeof $dataMap !== "undefined" ? $dataMap : null;
+        const decor = mapData && Array.isArray(mapData.rrDecor) ? mapData.rrDecor : null;
+        if (!decor || !decor.length || typeof Sprite === "undefined") return;
+        if (typeof Reactor3D !== "undefined" && Reactor3D.isMap3D && Reactor3D.isMap3D(mapData)) return;
+        const tilemap = spriteset && spriteset._tilemap;
+        if (!tilemap || !tilemap._lowerLayer || !tilemap._upperLayer) return;
+        for (const entry of decor) {
+            if (!entry || !Number.isFinite(entry.x) || !Number.isFinite(entry.y)) continue;
+            const source = this.decorTileSource(entry.tileId);
+            if (!source) continue;
+            const sprite = new Sprite();
+            sprite.bitmap = source.bitmap;
+            sprite.setFrame(source.sx, source.sy, source.width, source.height);
+            sprite.x = entry.x;
+            sprite.y = entry.y;
+            (entry.above ? tilemap._upperLayer : tilemap._lowerLayer).addChild(sprite);
+        }
+    };
+
+    if (typeof Spriteset_Map !== "undefined") {
+        const _createCharacters = Spriteset_Map.prototype.createCharacters;
+        Spriteset_Map.prototype.createCharacters = function() {
+            _createCharacters.apply(this, arguments);
+            ReactorPixel.createDecorSprites(this);
         };
     }
 

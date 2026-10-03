@@ -242,3 +242,23 @@ test('the freeplace tag is read and the offset helper rounds to whole pixels', (
     same(c.ReactorPixel.offsetOf({ rrOffset: { x: 10.4, y: -6.6 } }), { x: 10, y: -7 });
     same(c.ReactorPixel.offsetOf({}), { x: 0, y: 0 });
 });
+
+test('decor stamps resolve plain-sheet and A5 tiles, and refuse autotiles', () => {
+    const c = sandbox({ note: '<freeplace>' });
+    c.$gameMap.tileset = () => ({ tilesetNames: ['a1', 'a2', 'a3', 'a4', 'a5', 'b', 'c', 'd', 'e'] });
+    c.ImageManager = { loadTileset: name => ({ name }) };
+    c.Tilemap = { TILE_ID_A5: 1536 };
+    // B sheet, right half, second row: the stock event-tile rect arithmetic.
+    const b = c.ReactorPixel.decorTileSource(138);
+    assert.equal(b.bitmap.name, 'b');
+    assert.equal(b.sx, 480);
+    assert.equal(b.sy, 48);
+    // A5: ninth tile of the sheet, eight per row.
+    const a5 = c.ReactorPixel.decorTileSource(1536 + 9);
+    assert.equal(a5.bitmap.name, 'a5');
+    assert.equal(a5.sx, 48);
+    assert.equal(a5.sy, 48);
+    // Autotiles have no lone shape; the layer refuses them.
+    assert.equal(c.ReactorPixel.decorTileSource(2048), null);
+    assert.equal(c.ReactorPixel.decorTileSource(1536 + 128), null);
+});

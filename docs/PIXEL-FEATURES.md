@@ -15,13 +15,23 @@ down on a 3D map.
   granularity, and several may share a cell. Each event stores what it needs
   in an `rrOffset: { x, y }` key (pixels, relative to its cell's top-left)
   on the event inside `MapNNN.json`; a zero offset takes the key back off.
+- **Free tiles** — the toolbar's Free Tiles button (freeplace maps only)
+  opens a stamp tool: the palette's selected tile is stamped at any pixel
+  position, dragged to move, right-clicked to lift above the characters or
+  delete. Stamps live in an `rrDecor` list on the map
+  (`[{ tileId, x, y, above }]`, pixel coordinates, top-left) and are drawn
+  by the runtime inside the tilemap's own scrolled layers, so each one
+  depthsorts like the tiles around it. Plain sheets only (B-E, Reactor's
+  F/G, and A5): a lone autotile has no shape without its neighbours, so
+  A1-A4 are refused. Stamps are pure presentation — nothing to collide
+  with, nothing to trigger; paint the grid underneath if a spot must block.
 
 ## Switches
 
 | Checkbox | Map note tag | Data key | Runtime |
 |---|---|---|---|
 | Pixel movement | `<pixel>` | `rrPixel: true` also works | `runtime/reactor_pixel.js` |
-| Free placement | `<freeplace>` | `rrFreePlacement: true` also works | editor behavior; runtime renders `rrOffset` |
+| Free placement | `<freeplace>` | `rrFreePlacement: true` also works | editor behavior; runtime renders `rrOffset` and `rrDecor` |
 
 A tag typed into the note by hand counts too — the checkbox and the tag can
 never disagree in the saved map. `<pixel:0.6>` tunes the body box (clamped

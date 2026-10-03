@@ -249,6 +249,11 @@ class UIManager {
                     this.callbacks.toggleEventMode();
                 }
                 break;
+            case 'toggle-decor-mode':
+                if (this.callbacks.toggleDecorMode) {
+                    this.callbacks.toggleDecorMode();
+                }
+                break;
             case 'devtools':
                 if (typeof nw !== 'undefined') {
                     const win = nw.Window.get();
@@ -1503,6 +1508,14 @@ class UIManager {
                 break;
             case 'undo':
                 if (this.callbacks.getBuildHistory?.()) { this.callbacks.getBuildHistory().undo(); break; }
+                // Free tile stamps own the map while their tool is active
+                if (this.callbacks.getDecorManager) {
+                    const decorManager = this.callbacks.getDecorManager();
+                    if (decorManager && decorManager.active) {
+                        decorManager.undo();
+                        break;
+                    }
+                }
                 // Check if event mode is active
                 if (this.callbacks.getEventManager) {
                     const eventManager = this.callbacks.getEventManager();
@@ -1521,6 +1534,14 @@ class UIManager {
                 break;
             case 'redo':
                 if (this.callbacks.getBuildHistory?.()) { this.callbacks.getBuildHistory().redo(); break; }
+                // Free tile stamps own the map while their tool is active
+                if (this.callbacks.getDecorManager) {
+                    const decorManager = this.callbacks.getDecorManager();
+                    if (decorManager && decorManager.active) {
+                        decorManager.redo();
+                        break;
+                    }
+                }
                 // Check if event mode is active
                 if (this.callbacks.getEventManager) {
                     const eventManager = this.callbacks.getEventManager();
@@ -1621,6 +1642,11 @@ class UIManager {
             case 'toggle-event-mode':
                 if (this.callbacks.toggleEventMode) {
                     this.callbacks.toggleEventMode();
+                }
+                break;
+            case 'toggle-decor-mode':
+                if (this.callbacks.toggleDecorMode) {
+                    this.callbacks.toggleDecorMode();
                 }
                 break;
         }

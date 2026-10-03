@@ -88,8 +88,10 @@ class RPGReactor {
             showAbout: () => this.showAbout(),
             getMapEditor: () => this.mapEditor,
             getEventManager: () => this.eventManager,
+            getDecorManager: () => this.decorManager,
             getBuildHistory: () => (this.pieceBuilderManager?.active ? this.pieceBuilderManager : null),
             toggleEventMode: () => this.toggleEventMode(),
+            toggleDecorMode: () => this.toggleDecorMode(),
             disableEventModeIfActive: () => this.disableEventModeIfActive(),
             installRuntime: () => this.projectController.installReactorRuntime(),
             openBuildManager: () => this.buildManager.open(),
@@ -223,6 +225,12 @@ class RPGReactor {
             this.eventManager.initializeEventLayer(this.projectController.getTilemapManager());
             this.projectController.eventManager = this.eventManager;
 
+            // Free tile stamps for <freeplace> maps: their own tool and history.
+            if (!this.decorManager && typeof DecorManager !== 'undefined') {
+                this.decorManager = new DecorManager(this.projectController);
+                this.projectController.decorManager = this.decorManager;
+            }
+
             // Model props are map content: drawn on every map, whichever tab is up.
             if (!this.modelPropsManager && typeof ModelPropsManager !== 'undefined') {
                 this.modelPropsManager = new ModelPropsManager(this.projectController);
@@ -291,6 +299,14 @@ class RPGReactor {
 
                 // Clear undo history when loading a new map
                 this.eventManager.clearUndoHistory();
+
+                // Free tile stamps follow the same lifecycle as the events'.
+                if (this.decorManager) {
+                    this.decorManager.setCurrentMap(currentMap);
+                    this.decorManager.onUndoStateChange = (canUndo, canRedo) => {
+                        this.uiManager.updateUndoRedoButtons(canUndo, canRedo);
+                    };
+                }
             }
 
             // Set up zoom change callback
@@ -761,6 +777,7 @@ class RPGReactor {
                 else this.buildHotbar?.hide(false);
             }
             if (owner !== 'events' && this.eventManager?.eventMode) this.eventManager.setEventMode(false);
+            if (owner !== 'decor' && this.decorManager?.active) this.decorManager.setActive(false);
             const map = this.mapEditor, palette = this.tilesetPaletteViewer;
             if (owner !== 'paint') {
                 if (map?.shadowPenMode) map.setShadowPenMode(false);
@@ -777,6 +794,13 @@ class RPGReactor {
             }
             map?.setEnabled(owner === 'paint');
             if (owner === 'paint') map?.setupMapInteraction?.();
+            if (owner === 'decor') {
+                // The palette stays up for picking stamps; a special tab
+                // switches back to a paint layer, B by default.
+                if (palette && (palette.currentLayer === 'M' || palette.currentLayer === 'T' || palette.currentLayer === 'P')) {
+                    palette.selectLayer(palette.lastPaintLayer || 'B');
+                }
+            }
             this.syncMapToolButtons();
             this.projectController?.mediaSurfacePreviewManager?.syncToolInteraction?.();
         } finally { this._changingMapTool = false; }
@@ -785,7 +809,7 @@ class RPGReactor {
     syncMapToolButtons() {
         const owner = this.mapTool, map = this.mapEditor;
         const building = owner === 'pieces' || (!!this.buildHotbar?.visible && (owner === 'lighting' || owner === 'media' || owner === 'terrain' || owner === 'models'));
-        for (const [selector,tool] of [['#toolbar-event-manager-btn','events'],['[data-action="media-surfaces"]','media'],['[data-action="lighting-tool"]','lighting'],['[data-action="build-tool"]','pieces']]) {
+        for (const [selector,tool] of [['#toolbar-event-manager-btn','events'],['#toolbar-decor-btn','decor'],['[data-action="media-surfaces"]','media'],['[data-action="lighting-tool"]','lighting'],['[data-action="build-tool"]','pieces']]) {
             const on = tool === 'pieces' ? building : owner === tool;
             const button=document.querySelector(selector);button?.classList.toggle('active',on);button?.setAttribute('aria-pressed',String(on));
         }
@@ -826,6 +850,28 @@ class RPGReactor {
 
     // Legacy callback name used by drawing buttons and keyboard shortcuts.
     disableEventModeIfActive() { this.claimMapTool('paint'); }
+
+    toggleDecorMode() {
+        if (!this.decorManager || !this.projectController?.getTilemapManager?.()?.currentMap) {
+            this.uiManager.updateStatus(window.I18n ? window.I18n.t('status.loadMapFirst') : 'Load a map first');
+            return;
+        }
+        if (!this.decorManager.freePlacementEnabled()) {
+            const hint = 'Free tiles need the map\'s Free placement switch (Map Properties, 2D Pixel).';
+            this.uiManager.updateStatus(window.I18n?.tText ? window.I18n.tText(hint) : hint);
+            return;
+        }
+        this.eventManager.setTilesetPaletteViewer(this.tilesetPaletteViewer);
+        const enabled = !this.decorManager.active;
+        if (enabled) {
+            this.claimMapTool('decor');
+            this.decorManager.setActive(true);
+        } else {
+            this.decorManager.setActive(false);
+            this.claimMapTool('paint');
+        }
+        this.uiManager.updateUndoRedoButtons(this.decorManager.canUndo(), this.decorManager.canRedo());
+    }
 
     // Show tileset palette viewer
     async showTilesetPalette() {
