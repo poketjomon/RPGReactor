@@ -147,12 +147,21 @@ class EventManager {
     _eventPlacement(eventId) {
         const sidecar = this.currentMap?.reactor3d;
         const size = sidecar?.eventSize?.[eventId];
-        return { height: Number(sidecar?.eventZ?.[eventId]) || 0, preview: sidecar?.eventPreviews?.[eventId] ?? null, size: Array.isArray(size) ? size.slice() : null };
+        const offset = sidecar?.eventOffsets?.[eventId];
+        return { height: Number(sidecar?.eventZ?.[eventId]) || 0, preview: sidecar?.eventPreviews?.[eventId] ?? null, size: Array.isArray(size) ? size.slice() : null, offset: offset ? { ...offset } : null };
     }
 
     _setEventPlacement(eventId, placement) {
         const map = this.currentMap;
         if (!map) return;
+        if (placement?.offset) {
+            map.reactor3d ||= { version: 1 };
+            map.reactor3d.eventOffsets ||= {};
+            map.reactor3d.eventOffsets[String(eventId)] = { ...placement.offset };
+        } else if (map.reactor3d?.eventOffsets) {
+            delete map.reactor3d.eventOffsets[String(eventId)];
+            if (!Object.keys(map.reactor3d.eventOffsets).length) delete map.reactor3d.eventOffsets;
+        }
         // A copied event keeps its footprint; a removed one takes it with it.
         if (typeof RRMapElevation !== 'undefined' && RRMapElevation.setEventSize) RRMapElevation.setEventSize(map, eventId, placement?.size || [1, 1]);
         for (const [field, value] of [['eventZ', placement?.height], ['eventPreviews', placement?.preview]]) {
@@ -165,6 +174,22 @@ class EventManager {
                 delete map.reactor3d[field][String(eventId)];
                 if (!Object.keys(map.reactor3d[field]).length) delete map.reactor3d[field];
             }
+        }
+    }
+
+    _eventOffsetsSnapshot() {
+        const offsets = this.currentMap?.reactor3d?.eventOffsets;
+        return offsets ? JSON.parse(JSON.stringify(offsets)) : null;
+    }
+
+    _restoreEventOffsets(state) {
+        const map = this.currentMap;
+        if (!map) return;
+        if (state && Object.keys(state).length) {
+            map.reactor3d = map.reactor3d || { version: 1 };
+            map.reactor3d.eventOffsets = JSON.parse(JSON.stringify(state));
+        } else if (map.reactor3d) {
+            delete map.reactor3d.eventOffsets;
         }
     }
 
@@ -199,7 +224,8 @@ class EventManager {
             models: this._eventModelsSnapshot(),
             heights: this._eventHeightsSnapshot(),
             sizes: this._eventSizesSnapshot(),
-            previews: this._eventPreviewsSnapshot()
+            previews: this._eventPreviewsSnapshot(),
+            offsets: this._eventOffsetsSnapshot()
         };
         this.undoStack.push(eventsData);
 
@@ -224,7 +250,8 @@ class EventManager {
             models: this._eventModelsSnapshot(),
             heights: this._eventHeightsSnapshot(),
             sizes: this._eventSizesSnapshot(),
-            previews: this._eventPreviewsSnapshot()
+            previews: this._eventPreviewsSnapshot(),
+            offsets: this._eventOffsetsSnapshot()
         });
 
         // Restore previous state
@@ -237,6 +264,7 @@ class EventManager {
         this._restoreEventHeights(previousData);
         this._restoreEventSizes(previousData);
         this._restoreEventPreviews(previousData);
+        this._restoreEventOffsets(previousData.offsets);
 
         // Undo restores cloned data, so the selection must follow that object.
         this._restoreEventSelection();
@@ -257,7 +285,8 @@ class EventManager {
             models: this._eventModelsSnapshot(),
             heights: this._eventHeightsSnapshot(),
             sizes: this._eventSizesSnapshot(),
-            previews: this._eventPreviewsSnapshot()
+            previews: this._eventPreviewsSnapshot(),
+            offsets: this._eventOffsetsSnapshot()
         });
 
         // Restore next state
@@ -270,6 +299,7 @@ class EventManager {
         this._restoreEventHeights(nextData);
         this._restoreEventSizes(nextData);
         this._restoreEventPreviews(nextData);
+        this._restoreEventOffsets(nextData.offsets);
 
         // Undo restores cloned data, so the selection must follow that object.
         this._restoreEventSelection();
@@ -379,6 +409,7 @@ class EventManager {
     // Set the current map
     setCurrentMap(mapData) {
         this.currentMap = mapData;
+        this._migrateLegacyFreePlacement();
         this.selectedEvent = null;
         this.selectedTileX = null;
         this.selectedTileY = null;
@@ -1079,20 +1110,52 @@ class EventManager {
         );
     }
 
+    /**
+     * Old maps carried free placement inside Map###.json (rrDecor on the
+     * map, rrOffset on events); the RPG Maker editor's whole-file rewrite
+     * silently deleted it. The sidecar is the home now — move whatever
+     * legacy data a map still carries on load. Idempotent.
+     */
+    _migrateLegacyFreePlacement() {
+        const map = this.currentMap;
+        if (!map) return;
+        const side = map.reactor3d = map.reactor3d || { version: 1 };
+        if (Array.isArray(map.rrDecor)) {
+            const decor = side.decor = Array.isArray(side.decor) ? side.decor : [];
+            for (const entry of map.rrDecor) {
+                if (entry && !decor.some(item => item === entry)) decor.push(entry);
+            }
+            delete map.rrDecor;
+        }
+        for (const event of (map.events || [])) {
+            if (event && typeof event === 'object' && event.rrOffset) {
+                side.eventOffsets = side.eventOffsets || {};
+                side.eventOffsets[String(event.id)] = event.rrOffset;
+                delete event.rrOffset;
+            }
+        }
+    }
+
     /** An event's pixel offset from its cell origin, in map pixels. */
     eventOffsetOf(event) {
-        const offset = event && event.rrOffset;
+        const side = this.currentMap && this.currentMap.reactor3d;
+        const stored = side && side.eventOffsets && side.eventOffsets[String(event && event.id)];
+        const offset = stored || (event && event.rrOffset);
         if (!offset) return { x: 0, y: 0 };
         return { x: Math.round(Number(offset.x) || 0), y: Math.round(Number(offset.y) || 0) };
     }
 
     /** Write an event's pixel offset; zero-zero takes the key back off. */
     setEventOffset(event, x, y) {
-        if (!event) return;
+        const map = this.currentMap;
+        if (!map || !event) return;
         const ox = Math.round(Number(x) || 0);
         const oy = Math.round(Number(y) || 0);
-        if (!ox && !oy) delete event.rrOffset;
-        else event.rrOffset = { x: ox, y: oy };
+        const side = map.reactor3d = map.reactor3d || { version: 1 };
+        side.eventOffsets = side.eventOffsets || {};
+        if (!ox && !oy) delete side.eventOffsets[String(event.id)];
+        else side.eventOffsets[String(event.id)] = { x: ox, y: oy };
+        if (!Object.keys(side.eventOffsets).length) delete side.eventOffsets;
     }
 
     /**

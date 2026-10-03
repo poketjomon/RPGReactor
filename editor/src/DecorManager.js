@@ -64,6 +64,11 @@ class DecorManager {
 
     setCurrentMap(map) {
         this.currentMap = map || null;
+        if (map && Array.isArray(map.rrDecor)) {
+            const side = map.reactor3d = map.reactor3d || { version: 1 };
+            side.decor = Array.isArray(side.decor) ? side.decor.concat(map.rrDecor) : map.rrDecor;
+            delete map.rrDecor;
+        }
         this.clearSelection();
         this.clearUndoHistory();
         this.render();
@@ -153,8 +158,9 @@ class DecorManager {
 
     decorList() {
         if (!this.currentMap) return null;
-        if (!Array.isArray(this.currentMap.rrDecor)) this.currentMap.rrDecor = [];
-        return this.currentMap.rrDecor;
+        const side = this.currentMap.reactor3d = this.currentMap.reactor3d || { version: 1 };
+        if (!Array.isArray(side.decor)) side.decor = [];
+        return side.decor;
     }
 
     ensureContainers() {
@@ -200,7 +206,7 @@ class DecorManager {
         if (!this.active) return;
         this.ensureContainers();
         if (!this._belowContainer) return;
-        const list = this.currentMap ? (this.currentMap.rrDecor || []) : [];
+        const list = this.currentMap?.reactor3d?.decor || [];
         this._belowContainer.removeChildren().forEach(child => child.destroy({ children: true }));
         this._aboveContainer.removeChildren().forEach(child => child.destroy({ children: true }));
         for (const entry of list) {
@@ -356,7 +362,7 @@ class DecorManager {
     // Undo (its own stack; UIManager routes here while the tool is active)
 
     saveState() {
-        this._undoStack.push(JSON.stringify(this.currentMap?.rrDecor || []));
+        this._undoStack.push(JSON.stringify(this.currentMap?.reactor3d?.decor || []));
         if (this._undoStack.length > 100) this._undoStack.shift();
         this._redoStack = [];
         this.onUndoStateChange?.(this.canUndo(), this.canRedo());
@@ -364,7 +370,8 @@ class DecorManager {
 
     _apply(snapshot) {
         if (!this.currentMap) return;
-        this.currentMap.rrDecor = JSON.parse(snapshot);
+        const side = this.currentMap.reactor3d = this.currentMap.reactor3d || { version: 1 };
+        side.decor = JSON.parse(snapshot);
         this.clearSelection();
         this.render();
         this.onUndoStateChange?.(this.canUndo(), this.canRedo());
@@ -372,13 +379,13 @@ class DecorManager {
 
     undo() {
         if (!this.canUndo()) return;
-        this._redoStack.push(JSON.stringify(this.currentMap?.rrDecor || []));
+        this._redoStack.push(JSON.stringify(this.currentMap?.reactor3d?.decor || []));
         this._apply(this._undoStack.pop());
     }
 
     redo() {
         if (!this.canRedo()) return;
-        this._undoStack.push(JSON.stringify(this.currentMap?.rrDecor || []));
+        this._undoStack.push(JSON.stringify(this.currentMap?.reactor3d?.decor || []));
         this._apply(this._redoStack.pop());
     }
 

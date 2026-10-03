@@ -467,7 +467,12 @@
         const _eventInitialize = Game_Event.prototype.initialize;
         Game_Event.prototype.initialize = function(mapId, eventId) {
             _eventInitialize.apply(this, arguments);
-            const offset = this.event() && this.event().rrOffset;
+            // Offsets live in the map's sidecar (reactor3d.eventOffsets),
+            // keyed by event id; a legacy event.rrOffset still counts.
+            const side = typeof $dataMap !== "undefined" && $dataMap && $dataMap.reactor3d;
+            const offsets = side && side.eventOffsets;
+            const offset = (offsets && offsets[String(this._eventId)])
+                || (this.event() && this.event().rrOffset);
             if (offset) {
                 this._reactorOffsetX = Math.round(Number(offset.x) || 0);
                 this._reactorOffsetY = Math.round(Number(offset.y) || 0);
@@ -507,7 +512,12 @@
      */
     ReactorPixel.createDecorSprites = function(spriteset) {
         const mapData = typeof $dataMap !== "undefined" ? $dataMap : null;
-        const decor = mapData && Array.isArray(mapData.rrDecor) ? mapData.rrDecor : null;
+        // The stamps live in the map's sidecar (reactor3d.decor), where the
+        // RPG Maker editor's whole-file rewrite cannot reach; older maps
+        // carried them as rrDecor inside Map###.json.
+        const side = mapData && mapData.reactor3d;
+        const decor = side && Array.isArray(side.decor) && side.decor.length ? side.decor
+            : (mapData && Array.isArray(mapData.rrDecor) ? mapData.rrDecor : null);
         if (!decor || !decor.length || typeof Sprite === "undefined") return;
         if (typeof Reactor3D !== "undefined" && Reactor3D.isMap3D && Reactor3D.isMap3D(mapData)) return;
         const tilemap = spriteset && spriteset._tilemap;

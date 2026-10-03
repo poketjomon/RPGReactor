@@ -316,7 +316,9 @@
         const lit = !!(sidecar3d && ((Array.isArray(sidecar3d.lights) && sidecar3d.lights.length)
             || sidecar3d.lighting));
         const media = Array.isArray(sidecar3d?.mediaSurfaces) && sidecar3d.mediaSurfaces.length > 0;
-        if (isFlat(mapData) && !grouped && !media && !modeled && !lifted && !previewed && !roomed && !propped && !built && !lit
+        const placed = !!(sidecar3d && ((Array.isArray(sidecar3d.decor) && sidecar3d.decor.length)
+            || (sidecar3d.eventOffsets && Object.keys(sidecar3d.eventOffsets).length)));
+        if (isFlat(mapData) && !grouped && !media && !modeled && !lifted && !previewed && !roomed && !propped && !built && !lit && !placed
             && !(sidecar3d && sidecar3d.camera)) {
             if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
             return true;
