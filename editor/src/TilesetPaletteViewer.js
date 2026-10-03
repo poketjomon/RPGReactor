@@ -109,13 +109,59 @@ class TilesetPaletteViewer {
         this._loadedTilesetId = null;
     }
 
+    // Palette zoom: the sheet draws at native resolution and only its
+    // displayed width changes, so every selection calculation keeps working
+    // untouched. 0.25..3, remembered across sessions.
+    static ZOOM_MIN = 0.25;
+    static ZOOM_MAX = 3;
+    static ZOOM_STEP = 0.25;
+
+    paletteZoom() {
+        if (this._zoom === undefined) {
+            const stored = Number(localStorage.getItem('rrTilesetZoom'));
+            this._zoom = Number.isFinite(stored) && stored >= TilesetPaletteViewer.ZOOM_MIN
+                && stored <= TilesetPaletteViewer.ZOOM_MAX ? stored : 1;
+        }
+        return this._zoom;
+    }
+
+    setPaletteZoom(zoom, focusLabel = true) {
+        const clamped = Math.max(TilesetPaletteViewer.ZOOM_MIN,
+            Math.min(TilesetPaletteViewer.ZOOM_MAX, Math.round(zoom * 100) / 100));
+        if (clamped === this._zoom) return;
+        this._zoom = clamped;
+        try { localStorage.setItem('rrTilesetZoom', String(clamped)); } catch (e) { /* private mode */ }
+        this.applyPaletteZoom();
+        if (focusLabel) this.updateZoomLabel();
+    }
+
+    applyPaletteZoom() {
+        const canvas = document.getElementById('tileset-preview-canvas');
+        const scroller = document.getElementById('tileset-preview-container');
+        if (!canvas) return;
+        canvas.style.width = (this.paletteZoom() * 100) + '%';
+        // Zoomed past the sidebar, the sheet scrolls sideways; below 100%
+        // the whole width fits and horizontal panning would only drift.
+        if (scroller) scroller.style.overflowX = this.paletteZoom() > 1 ? 'auto' : 'hidden';
+    }
+
+    updateZoomLabel() {
+        const label = document.getElementById('tileset-zoom-label');
+        if (label) label.textContent = Math.round(this.paletteZoom() * 100) + '%';
+    }
+
     // Initialize the palette viewer UI in the sidebar
     initializeUI(container) {
         const tt = (text) => (typeof window !== 'undefined' && window.I18n) ? window.I18n.tText(text) : text;
         container.innerHTML = `
             <div id="tileset-palette-container" style="display: flex; flex-direction: column; flex: 1; min-height: 0;">
                 <!-- Layer Tabs -->
-                <div id="tileset-tabs" style="display: flex; flex-wrap: wrap; gap: 2px; padding: 8px; background-color: var(--color-bg-surface); border-bottom: 1px solid var(--color-border); flex-shrink: 0;">
+                <div id="tileset-tabs" style="display: flex; flex-wrap: wrap; gap: 2px; padding: 8px; background-color: var(--color-bg-surface); border-bottom: 1px solid var(--color-border); flex-shrink: 0; align-items: center;">
+                    <div id="tileset-zoom-controls" style="display: flex; align-items: center; gap: 3px; margin-left: auto; flex-shrink: 0;">
+                        <button id="tileset-zoom-out" type="button" title="Zoom out (Ctrl+wheel)" aria-label="Zoom out" style="width: 20px; height: 20px; line-height: 1; padding: 0; border: 1px solid var(--color-border-input); background: var(--color-bg-input); color: var(--color-text); border-radius: 3px; cursor: pointer; font-size: 11px;">−</button>
+                        <span id="tileset-zoom-label" title="Reset zoom" style="font-size: 10px; color: var(--color-text-muted); min-width: 30px; text-align: center; cursor: pointer; user-select: none;">100%</span>
+                        <button id="tileset-zoom-in" type="button" title="Zoom in (Ctrl+wheel)" aria-label="Zoom in" style="width: 20px; height: 20px; line-height: 1; padding: 0; border: 1px solid var(--color-border-input); background: var(--color-bg-input); color: var(--color-text); border-radius: 3px; cursor: pointer; font-size: 11px;">＋</button>
+                    </div>
                     ${this.createLayerTab('A')}
                     ${this.createLayerTab('B')}
                     ${this.createLayerTab('C')}
@@ -259,6 +305,24 @@ class TilesetPaletteViewer {
                 this.selectLayer(layer);
             });
         });
+
+        // Palette zoom: buttons, label-click reset, Ctrl+wheel anywhere
+        // over the sheet.
+        const zoomIn = document.getElementById('tileset-zoom-in');
+        const zoomOut = document.getElementById('tileset-zoom-out');
+        const zoomLabel = document.getElementById('tileset-zoom-label');
+        zoomIn?.addEventListener('click', () => this.setPaletteZoom(this.paletteZoom() + TilesetPaletteViewer.ZOOM_STEP));
+        zoomOut?.addEventListener('click', () => this.setPaletteZoom(this.paletteZoom() - TilesetPaletteViewer.ZOOM_STEP));
+        zoomLabel?.addEventListener('click', () => this.setPaletteZoom(1));
+        const previewContainer = document.getElementById('tileset-preview-container');
+        previewContainer?.addEventListener('wheel', (event) => {
+            if (!event.ctrlKey && !event.metaKey) return;
+            event.preventDefault();
+            const direction = event.deltaY < 0 ? 1 : -1;
+            this.setPaletteZoom(this.paletteZoom() + direction * TilesetPaletteViewer.ZOOM_STEP);
+        }, { passive: false });
+        this.updateZoomLabel();
+        this.applyPaletteZoom();
 
         // Canvas mouse events for tile selection
         const canvas = document.getElementById('tileset-preview-canvas');
@@ -684,6 +748,9 @@ class TilesetPaletteViewer {
 
             this.drawGrid(ctx, halfWidth, img.height * 2, scale);
         }
+
+        // The sheet just resized itself; the display width rides along.
+        this.applyPaletteZoom();
 
         // OPTIMIZATION: Cache the rendered layer for fast redrawing during selection
         this.cacheCurrentLayer(canvas);
