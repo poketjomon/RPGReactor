@@ -18,10 +18,14 @@ A runtime opt-in and an editor way of working:
   Stamps live in an `rrDecor` list on the map
   (`[{ tileId, x, y, above }]`, pixel coordinates, top-left) and are drawn
   by the runtime inside the tilemap's own scrolled layers, so each one
-  depthsorts like the tiles around it. Plain sheets only (B-E, Reactor's
-  F/G, and A5): a lone autotile has no shape without its neighbours, so
-  A1-A4 are refused. Stamps are pure presentation — nothing to collide
-  with, nothing to trigger; paint the grid underneath if a spot must block.
+  depthsorts like the tiles around it. Plain sheets and A5 stamp; the
+  autotile sheets (A1-A4) stay grid-painted with the pencil, since a
+  free-floating autotile has no shape of its own and the pencil is what
+  autotiles. Stamps are pure presentation — nothing to collide with,
+  nothing to trigger; paint the grid underneath if a spot must block.
+  With the map's Grid box ticked, the tool shows a fine eight-pixel
+  assist grid and snaps stamps to it; unticked, placement is free at
+  single-pixel precision.
 
 The old `<freeplace>` note tag still opens nothing and blocks nothing: free
 placement is simply how the editor works now. A map carrying the tag keeps

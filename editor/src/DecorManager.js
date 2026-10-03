@@ -52,7 +52,11 @@ class DecorManager {
         return this.eventManager?.tilesetPaletteViewer || null;
     }
 
-    /** Plain-sheet bands only: B-E (0-1023), Reactor F/G (1024-1535), A5 (1536-1663). */
+    /**
+     * Plain sheets and A5 only: B-E (0-1023), Reactor F/G (1024-1535),
+     * A5 (1536-1663). Autotile sheets stay grid-painted — a free-floating
+     * autotile has no lone shape to show and would break the autotiling.
+     */
     static stampableTileId(tileId) {
         return Number.isInteger(tileId) && tileId > 0
             && (tileId < 1536 || (tileId >= 1536 && tileId < 1536 + 128));
@@ -307,10 +311,7 @@ class DecorManager {
 
     stamp(tileId, px, py, skipHistory = false) {
         const list = this.decorList();
-        if (!list || !DecorManager.stampableTileId(tileId)) {
-            this.status('Autotile sheets (A1-A4) cannot be stamped freely — pick a B-E, F/G or A5 tile.');
-            return null;
-        }
+        if (!list || !DecorManager.stampableTileId(tileId)) return null;
         if (!skipHistory) this.saveState();
         const w = this.tileWidth();
         const h = this.tileHeight();
@@ -428,15 +429,13 @@ class DecorManager {
             // cursor, then keep stamping while the button drags — one undo
             // step for the whole stroke, like a paintbrush.
             const tileId = this.selectedPaletteTileId();
-            if (tileId > 0) {
-                if (DecorManager.stampableTileId(tileId)) {
-                    this._placing = true;
-                    this._lastStamp = { x: pos.x, y: pos.y };
-                    this.saveState();
-                    this.stamp(tileId, pos.x, pos.y, true);
-                } else {
-                    this.status('Autotile sheets (A1-A4) cannot be stamped freely — pick a B-E, F/G or A5 tile.');
-                }
+            if (tileId > 0 && DecorManager.stampableTileId(tileId)) {
+                this._placing = true;
+                this._lastStamp = { x: pos.x, y: pos.y };
+                this.saveState();
+                this.stamp(tileId, pos.x, pos.y, true);
+            } else if (tileId > 0) {
+                this.status('Autotile sheets (A1-A4) paint on the grid with the pencil — free placement stamps B-E, F/G and A5 tiles.');
             } else {
                 this.clearSelection();
                 this.hideGhost();
@@ -451,12 +450,18 @@ class DecorManager {
                 this.updateHighlight();
                 return;
             }
-            // The free ghost trails the cursor whenever a stampable tile is picked.
+            // The free ghost trails the cursor whenever a stampable tile is
+            // picked; an A-sheet pick says why it gets no ghost, once per pick.
             const tileId = this.selectedPaletteTileId();
             if (tileId > 0 && DecorManager.stampableTileId(tileId)) {
                 this.showGhost(tileId, pos.x, pos.y);
+                this._hintedTileId = 0;
             } else {
                 this.hideGhost();
+                if (tileId > 0 && this._hintedTileId !== tileId) {
+                    this._hintedTileId = tileId;
+                    this.status('Autotile sheets (A1-A4) paint on the grid with the pencil — free placement stamps B-E, F/G and A5 tiles.');
+                }
             }
             if (!this._placing) return;
             const dx = pos.x - this._lastStamp.x;
