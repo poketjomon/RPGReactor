@@ -33,7 +33,10 @@
 
     const ReactorPixel = root.ReactorPixel = {};
 
-    ReactorPixel.PIXEL_PATTERN = /<pixel(?::\s*([0-9.]+))?>/i;
+    // <pixel> | <pixel:0.6> | <pixel:0.6x0.5> | <pixel:0.6x0.5@middle>
+    // Size is width x height in tiles (each 0.3..1); the anchor places the
+    // box inside the tile band: bottom (the feet, default), middle or top.
+    ReactorPixel.PIXEL_PATTERN = /<pixel(?::\s*([0-9.]+)(?:\s*[x×*]\s*([0-9.]+))?(?:\s*@\s*(top|middle|bottom|[tmb]))?)?>/i;
     ReactorPixel.NO_PIXEL_PATTERN = /<nopixel>/i;
     ReactorPixel.FREE_PATTERN = /<freeplace>/i;
 
@@ -72,15 +75,15 @@
         const meta = mapData.meta && mapData.meta.pixel;
         const match = typeof mapData.note === "string" ? this.PIXEL_PATTERN.exec(mapData.note) : null;
         if (!threeD && !off) {
-            let body = this.DEFAULT_BODY;
-            // The size rides the tag: `<pixel:0.6>` — from meta when the
-            // loader extracted it, straight out of the note otherwise.
-            const asked = typeof meta === "string" ? meta : (match ? match[1] : null);
-            if (asked) {
-                const size = Number(asked);
-                if (Number.isFinite(size) && size > 0) {
-                    body = Math.max(this.MIN_BODY, Math.min(this.MAX_BODY, size));
-                }
+            let body = this.defaultBody();
+            // The spec rides the tag: from meta when the loader extracted
+            // it, straight out of the note otherwise.
+            if (typeof meta === "string") {
+                const metaMatch = this.PIXEL_PATTERN.exec(`<pixel:${meta}>`);
+                body = this.parseBody(metaMatch ? metaMatch[1] : meta,
+                    metaMatch ? metaMatch[2] : null, metaMatch ? metaMatch[3] : null);
+            } else if (match) {
+                body = this.parseBody(match[1], match[2], match[3]);
             }
             mode = { body };
         }
@@ -122,18 +125,53 @@
     };
 
     /** The body box of a character, in tile units: a smaller, foot-anchored tile. */
+    /** The stock body: 0.7 of a tile square, anchored at the feet. */
+    ReactorPixel.defaultBody = function() {
+        return { width: this.DEFAULT_BODY, height: this.DEFAULT_BODY, anchor: "bottom" };
+    };
+
+    /** One size clamped into range. */
+    ReactorPixel.clampSize = function(value) {
+        const size = Number(value);
+        return Number.isFinite(size) && size > 0
+            ? Math.max(this.MIN_BODY, Math.min(this.MAX_BODY, size)) : null;
+    };
+
+    /** Width x height plus the vertical anchor, all optional, all clamped. */
+    ReactorPixel.parseBody = function(widthSpec, heightSpec, anchorSpec) {
+        const body = this.defaultBody();
+        const width = this.clampSize(widthSpec);
+        if (width !== null) body.width = width;
+        const height = this.clampSize(heightSpec);
+        if (height !== null) body.height = height;
+        // One number sizes the whole body, as it always did; only the
+        // two-number form sets width and height apart.
+        else if (width !== null) body.height = width;
+        const anchor = { t: "top", m: "middle", b: "bottom" }[String(anchorSpec || "").toLowerCase()]
+            || String(anchorSpec || "").toLowerCase();
+        if (anchor === "top" || anchor === "middle" || anchor === "bottom") body.anchor = anchor;
+        return body;
+    };
+
     ReactorPixel.bodyBox = function(character) {
         const mode = this.mapMode(typeof $dataMap !== "undefined" ? $dataMap : null);
-        const s = mode ? mode.body : this.DEFAULT_BODY;
+        const body = mode ? mode.body : this.defaultBody();
         const rx = Number.isFinite(character._realX) ? character._realX : character.x;
         const ry = Number.isFinite(character._realY) ? character._realY : character.y;
-        const inset = (1 - s) / 2;
+        const inset = (1 - body.width) / 2;
+        // The anchor places the box inside the character's tile band: the
+        // feet (bottom) by default, so a sprite's boots line up with its box.
+        let top;
+        if (body.anchor === "top") top = ry;
+        else if (body.anchor === "middle") top = ry + (1 - body.height) / 2;
+        else top = ry + 1 - body.height;
         return {
             left: rx + inset,
             right: rx + 1 - inset,
-            top: ry + 1 - s,
-            bottom: ry + 1,
-            width: s
+            top,
+            bottom: top + body.height,
+            width: body.width,
+            height: body.height
         };
     };
 

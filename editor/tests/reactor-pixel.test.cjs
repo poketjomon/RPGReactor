@@ -118,9 +118,21 @@ test('pixel walking is the default; <nopixel> opts one map out and <pixel:X> siz
     assert.equal(threeD.ReactorPixel.enabled(), false, '3D stands down');
     // The size tag still carries an optional body size, straight out of the note.
     const tuned = sandbox({ note: '<pixel:0.5>' });
-    assert.equal(tuned.ReactorPixel.mapMode(tuned.$dataMap).body, 0.5);
-    const silly = sandbox({ note: '<pixel:9>' });
-    assert.equal(silly.ReactorPixel.mapMode(silly.$dataMap).body, 1, 'clamped to a whole tile');
+    const tunedBody = tuned.ReactorPixel.mapMode(tuned.$dataMap).body;
+    assert.equal(tunedBody.width, 0.5);
+    assert.equal(tunedBody.height, 0.5);
+    assert.equal(tunedBody.anchor, 'bottom', 'the feet, by default');
+    const sized = sandbox({ note: '<pixel:0.6x0.4@middle>' });
+    const sizedBody = sized.ReactorPixel.mapMode(sized.$dataMap).body;
+    assert.equal(sizedBody.width, 0.6);
+    assert.equal(sizedBody.height, 0.4);
+    assert.equal(sizedBody.anchor, 'middle');
+    const shortAnchor = sandbox({ note: '<pixel:0.5x0.5@t>' });
+    assert.equal(shortAnchor.ReactorPixel.mapMode(shortAnchor.$dataMap).body.anchor, 'top');
+    const silly = sandbox({ note: '<pixel:9x0.1>' });
+    const sillyBody = silly.ReactorPixel.mapMode(silly.$dataMap).body;
+    assert.equal(sillyBody.width, 1, 'clamped to a whole tile');
+    assert.equal(sillyBody.height, 0.3, 'clamped to the floor');
 });
 
 test('the body box is a foot-anchored share of the tile', () => {
@@ -131,6 +143,21 @@ test('the body box is a foot-anchored share of the tile', () => {
     assert.ok(Math.abs(box.right - 5.85) < 1e-9, `right ${box.right}`);
     assert.ok(Math.abs(box.top - 5.3) < 1e-9, `top ${box.top}`);
     assert.equal(box.bottom, 6);
+});
+
+test('a sized, anchored body box sits where the tag says', () => {
+    const c = sandbox();
+    c.$dataMap = { note: '<pixel:0.5x0.4@middle>', meta: {} };
+    const player = makePlayer(c, c.$gameMap, 5, 5);
+    const box = c.ReactorPixel.bodyBox(player);
+    assert.ok(Math.abs(box.left - 5.25) < 1e-9, `left ${box.left}`);
+    assert.ok(Math.abs(box.right - 5.75) < 1e-9, `right ${box.right}`);
+    assert.ok(Math.abs(box.top - 5.3) < 1e-9, `middle top ${box.top}`);
+    assert.ok(Math.abs(box.bottom - 5.7) < 1e-9, `middle bottom ${box.bottom}`);
+    c.$dataMap = { note: '<pixel:0.5x0.4@top>', meta: {} };
+    const top = c.ReactorPixel.bodyBox(player);
+    assert.ok(Math.abs(top.top - 5) < 1e-9, 'top anchor pins to the tile top');
+    assert.ok(Math.abs(top.bottom - 5.4) < 1e-9, `top anchor bottom ${top.bottom}`);
 });
 
 test('a free walk slides along a wall instead of stopping a tile short', () => {

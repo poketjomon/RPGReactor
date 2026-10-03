@@ -34,6 +34,22 @@ working unchanged. Likewise the old per-map `<pixel>` opt-in still reads —
 it only sizes the body box now (`<pixel:0.6>`), it never turns the feature
 on or off.
 
+## The body tag
+
+The collision body is set per map with the note tag, in tile units
+(each side 0.3–1.0):
+
+- `<pixel>` — the default 0.7 × 0.7, anchored at the feet
+- `<pixel:0.6>` — one number sizes the whole body (0.6 × 0.6)
+- `<pixel:0.6x0.5>` — width and height set apart
+- `<pixel:0.6x0.5@middle>` — vertical anchor: `top`, `middle` or
+  `bottom` (the feet — the default; a sprite's boots line up with the
+  bottom of its box)
+
+Press F7 while playing to see it: the player's box in red, followers
+in blue, the logical cell as a white cross, blocking events' tiles in
+yellow.
+
 ## Switches
 
 | Switch | Map note tag | Data key | Runtime |
