@@ -138,6 +138,57 @@
     };
 
     /**
+     * F7 debug overlay: the player's body box (red), each visible follower's
+     * (blue), the logical cell the engine hangs steps and triggers on
+     * (white cross) and the tiles of blocking events (yellow). Toggled in
+     * play with F7 or from the console (ReactorPixel.debugBodies = true).
+     */
+    ReactorPixel.debugBodies = false;
+    ReactorPixel.DEBUG_KEY = "F7";
+
+    ReactorPixel.updateDebugOverlay = function(spriteset) {
+        const overlay = spriteset && spriteset._reactorPixelDebug;
+        if (!overlay) return;
+        overlay.clear();
+        if (!this.debugBodies || typeof $gameMap === "undefined" || !$gameMap) return;
+        const tw = $gameMap.tileWidth();
+        const th = $gameMap.tileHeight();
+        const cell = (character, color) => {
+            // The logical cell: what touch triggers, encounters and events
+            // still read while the body slides between tiles.
+            const cx = $gameMap.adjustX(character.x + 0.5) * tw;
+            const cy = $gameMap.adjustY(character.y + 0.5) * th;
+            overlay.moveTo(cx - 5, cy); overlay.lineTo(cx + 5, cy);
+            overlay.moveTo(cx, cy - 5); overlay.lineTo(cx, cy + 5);
+            overlay.stroke({ width: 1, color, alpha: 0.9 });
+        };
+        const body = (character, color) => {
+            const box = this.bodyBox(character);
+            const x1 = $gameMap.adjustX(box.left) * tw;
+            const x2 = $gameMap.adjustX(box.right) * tw;
+            const y1 = $gameMap.adjustY(box.top) * th;
+            const y2 = $gameMap.adjustY(box.bottom) * th;
+            overlay.rect(x1, y1, x2 - x1, y2 - y1);
+            overlay.fill({ color, alpha: 0.22 });
+            overlay.stroke({ width: 1, color, alpha: 0.9 });
+        };
+        if (typeof $gamePlayer !== "undefined" && $gamePlayer) {
+            body($gamePlayer, 0xff4d4d);
+            cell($gamePlayer, 0xffffff);
+            for (const follower of $gamePlayer.followers().visibleFollowers()) {
+                body(follower, 0x4da6ff);
+            }
+        }
+        for (const event of $gameMap.events()) {
+            if (!event.isNormalPriority() || event.isThrough() || event._erased) continue;
+            const x1 = $gameMap.adjustX(event.x) * tw;
+            const y1 = $gameMap.adjustY(event.y) * th;
+            overlay.rect(x1 + 1, y1 + 1, tw - 2, th - 2);
+            overlay.stroke({ width: 1, color: 0xffd529, alpha: 0.45 });
+        }
+    };
+
+    /**
      * Whether the edge of tile (x, y) toward direction d can be crossed —
      * the stock double-sided rule, without the 3D terrain clause this
      * module never meets.
@@ -543,6 +594,21 @@
         Spriteset_Map.prototype.createCharacters = function() {
             _createCharacters.apply(this, arguments);
             ReactorPixel.createDecorSprites(this);
+            // The debug overlay rides above everything the tilemap sorts.
+            if (typeof PIXI !== "undefined" && this._tilemap && !this._reactorPixelDebug) {
+                this._reactorPixelDebug = new PIXI.Graphics();
+                this._reactorPixelDebug.z = 8;
+                this._tilemap.addChild(this._reactorPixelDebug);
+            }
+        };
+        const _spritesetUpdate = Spriteset_Map.prototype.update;
+        Spriteset_Map.prototype.update = function() {
+            _spritesetUpdate.apply(this, arguments);
+            if (typeof Input !== "undefined" && Input.isTriggered
+                && Input.isTriggered(ReactorPixel.DEBUG_KEY)) {
+                ReactorPixel.debugBodies = !ReactorPixel.debugBodies;
+            }
+            ReactorPixel.updateDebugOverlay(this);
         };
     }
 
