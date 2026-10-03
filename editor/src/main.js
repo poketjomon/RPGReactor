@@ -406,6 +406,17 @@ class RPGReactor {
         });
         const videoCheckbox = document.getElementById('map-video-previews');
         if (videoCheckbox) videoCheckbox.checked = this.optionsManager.getShowVideoPreviews();
+        // Pixel movement is per-map game behavior: the box writes the <pixel>
+        // note tag straight onto the open map — the same switch Map Properties
+        // shows, kept in step with it because both read the one note.
+        document.getElementById('map-pixel-movement')?.addEventListener('change', (event) => {
+            const map = this.projectController?.tilemapManager?.currentMap;
+            if (!map || typeof RRMapPixelTags === 'undefined' || !RRMapPixelTags) {
+                event.currentTarget.checked = false;
+                return;
+            }
+            RRMapPixelTags.setPixel(map, event.currentTarget.checked);
+        });
         // The box follows the map once one is open (each map remembers its
         // own view); with no map yet it starts clear, and three.js is not
         // parsed until a viewport actually needs it.
@@ -1329,6 +1340,12 @@ class RPGReactor {
 
             // Display dimensions
             mapDimensionsEl.textContent = `${map.width} x ${map.height}`;
+        }
+
+        // The pixel switch follows the open map's own note.
+        const pixelMovementCheckbox = document.getElementById('map-pixel-movement');
+        if (pixelMovementCheckbox && typeof RRMapPixelTags !== 'undefined' && RRMapPixelTags) {
+            pixelMovementCheckbox.checked = RRMapPixelTags.hasPixel(map);
         }
 
         // Update zoom level

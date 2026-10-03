@@ -319,6 +319,7 @@ class DecorManager {
                 this.stamp(tileId, pos.x, pos.y);
             } else {
                 this.clearSelection();
+                this.status('Pick a tile in the palette first, then click the map to stamp it.');
             }
         });
 

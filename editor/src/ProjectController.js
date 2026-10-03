@@ -3492,6 +3492,12 @@ class ProjectController {
 
             this.uiManager.updateStatus(`Updated map: ${mapData.name}`);
         }
+        // Keep the quick pixel switch on the map bar in step with what the
+        // properties dialog just saved.
+        const pixelQuickBox = document.getElementById('map-pixel-movement');
+        if (pixelQuickBox && typeof RRMapPixelTags !== 'undefined' && RRMapPixelTags) {
+            pixelQuickBox.checked = RRMapPixelTags.hasPixel(this.tilemapManager?.currentMap);
+        }
         return true;
     }
 
