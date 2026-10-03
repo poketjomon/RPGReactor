@@ -406,9 +406,9 @@ class RPGReactor {
         });
         const videoCheckbox = document.getElementById('map-video-previews');
         if (videoCheckbox) videoCheckbox.checked = this.optionsManager.getShowVideoPreviews();
-        // Pixel movement is per-map game behavior: the box writes the <pixel>
-        // note tag straight onto the open map — the same switch Map Properties
-        // shows, kept in step with it because both read the one note.
+        // Pixel movement is on by default on 2D maps: the box clears or
+        // restores the open map's <nopixel> opt-out — the same switch Map
+        // Properties shows, kept in step with it because both read the note.
         document.getElementById('map-pixel-movement')?.addEventListener('change', (event) => {
             const map = this.projectController?.tilemapManager?.currentMap;
             if (!map || typeof RRMapPixelTags === 'undefined' || !RRMapPixelTags) {
@@ -1363,7 +1363,7 @@ class RPGReactor {
         // The pixel switch follows the open map's own note.
         const pixelMovementCheckbox = document.getElementById('map-pixel-movement');
         if (pixelMovementCheckbox && typeof RRMapPixelTags !== 'undefined' && RRMapPixelTags) {
-            pixelMovementCheckbox.checked = RRMapPixelTags.hasPixel(map);
+            pixelMovementCheckbox.checked = RRMapPixelTags.pixelEnabled(map);
         }
 
         // Update zoom level

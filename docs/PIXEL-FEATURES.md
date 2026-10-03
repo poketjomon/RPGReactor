@@ -1,11 +1,12 @@
 # Pixel movement and free placement (2D)
 
-A runtime opt-in and an editor way of working:
+A runtime default and an editor way of working:
 
-- **Pixel movement** — per map, from **Map Properties › 2D Pixel** (the note
-  tag `<pixel>`). The player walks continuously instead of stepping a tile at
-  a time: the held direction is a velocity, the body is a box smaller than a
-  tile (default 0.7 of one, `<pixel:0.6>` to tune it) that slides along
+- **Pixel movement** — on for every 2D map by default; **Map Properties ›
+  2D Pixel** (or the map bar switch) manages a per-map `<nopixel>` opt-out.
+  The player walks continuously instead of stepping a tile at a time: the
+  held direction is a velocity, the body is a box smaller than a tile
+  (default 0.7 of one, `<pixel:0.6>` to tune it) that slides along
   walls, and diagonal input walks diagonally. Steps, encounters, touch
   triggers, bushes, camera scroll and followers keep their stock meaning.
 - **Free placement** — always on, no switch. Events place, drag and paste at
@@ -29,18 +30,20 @@ A runtime opt-in and an editor way of working:
 
 The old `<freeplace>` note tag still opens nothing and blocks nothing: free
 placement is simply how the editor works now. A map carrying the tag keeps
-working unchanged.
+working unchanged. Likewise the old per-map `<pixel>` opt-in still reads —
+it only sizes the body box now (`<pixel:0.6>`), it never turns the feature
+on or off.
 
 ## Switches
 
 | Switch | Map note tag | Data key | Runtime |
 |---|---|---|---|
-| Pixel movement (per map) | `<pixel>` | `rrPixel: true` also works | `runtime/reactor_pixel.js` |
+| Pixel movement (default on; `<nopixel>` opts out) | `<nopixel>`; `<pixel:0.6>` sizes the body | `runtime/reactor_pixel.js` reads the note | `runtime/reactor_pixel.js` |
 | Free placement (always on) | — | `rrOffset` / `rrDecor` on the map data | editor behavior; runtime renders both |
 
-A tag typed into the note by hand counts too — the checkbox and the tag can
-never disagree in the saved map. `<pixel:0.6>` tunes the body box (clamped
-to 0.3–1.0 of a tile).
+The checkbox and the note can never disagree in the saved map: ticking the
+box clears the map's `<nopixel>`, unticking adds it, and a `<pixel:0.6>`
+body size typed by hand survives either way.
 
 ## What stays on the grid on purpose
 

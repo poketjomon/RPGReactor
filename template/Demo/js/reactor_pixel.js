@@ -2,18 +2,16 @@
 // reactor_pixel.js - RPG Reactor pixel movement and free placement
 //=============================================================================
 //
-// Two opt-in 2D features, each switched on per map so a project without
-// them plays exactly as before:
-//
-// Pixel movement — the map note tag `<pixel>` (or a `rrPixel: true` key on
-// the map). The player stops stepping tile by tile and walks continuously:
-// the held direction is a velocity, integrated every frame against a body
-// box smaller than a tile (default 0.7 of a tile, `<pixel:0.6>` to tune it),
-// sliding along walls instead of bumping them. Diagonal input walks
-// diagonally. Events, vehicles and move routes keep the stock grid; only
-// the player and its followers move freely. Steps, encounters, touch
-// triggers, bush and camera scroll all keep their stock meaning: one "step"
-// is one tile of ground covered.
+// Pixel movement — on for every 2D map by default (2026-10-03, matching the
+// littleRPG_PixelMove packaging): the player stops stepping tile by tile and
+// walks continuously — the held direction is a velocity, integrated every
+// frame against a body box smaller than a tile (0.7 of a tile by default,
+// `<pixel:0.6>` to tune it), sliding along walls instead of bumping them.
+// Diagonal input walks diagonally. A map note `<nopixel>` returns that one
+// map to the stock tile steps. Events, vehicles and move routes keep the
+// stock grid; only the player and its followers move freely. Steps,
+// encounters, touch triggers, bush and camera scroll all keep their stock
+// meaning: one "step" is one tile of ground covered.
 //
 // Free placement — the map note tag `<freeplace>` switches the editor over
 // (see the editor side); the runtime half is smaller: an event may carry
@@ -36,6 +34,7 @@
     const ReactorPixel = root.ReactorPixel = {};
 
     ReactorPixel.PIXEL_PATTERN = /<pixel(?::\s*([0-9.]+))?>/i;
+    ReactorPixel.NO_PIXEL_PATTERN = /<nopixel>/i;
     ReactorPixel.FREE_PATTERN = /<freeplace>/i;
 
     /** The body box as a share of a tile, and its floor and ceiling. */
@@ -57,6 +56,9 @@
     /**
      * The map's pixel settings: null (off), or the body size. Memoized per
      * map — this is asked several times a frame per character.
+     *
+     * Pixel walking is the default for every 2D map; `<nopixel>` opts a
+     * single map back out, and `<pixel:X>` only sizes the body box.
      */
     ReactorPixel.mapMode = function(mapData) {
         if (!mapData) return null;
@@ -66,9 +68,10 @@
         // A 3D map never steps in tiles, so it never walks in pixels either.
         const threeD = typeof Reactor3D !== "undefined" && Reactor3D.isMap3D
             && Reactor3D.isMap3D(mapData);
+        const off = typeof mapData.note === "string" ? this.NO_PIXEL_PATTERN.test(mapData.note) : false;
         const meta = mapData.meta && mapData.meta.pixel;
         const match = typeof mapData.note === "string" ? this.PIXEL_PATTERN.exec(mapData.note) : null;
-        if (!threeD && (meta || mapData.rrPixel === true || match)) {
+        if (!threeD && !off) {
             let body = this.DEFAULT_BODY;
             // The size rides the tag: `<pixel:0.6>` — from meta when the
             // loader extracted it, straight out of the note otherwise.
@@ -467,7 +470,12 @@
         const _eventInitialize = Game_Event.prototype.initialize;
         Game_Event.prototype.initialize = function(mapId, eventId) {
             _eventInitialize.apply(this, arguments);
-            const offset = this.event() && this.event().rrOffset;
+            // Offsets live in the map's sidecar (reactor3d.eventOffsets),
+            // keyed by event id; a legacy event.rrOffset still counts.
+            const side = typeof $dataMap !== "undefined" && $dataMap && $dataMap.reactor3d;
+            const offsets = side && side.eventOffsets;
+            const offset = (offsets && offsets[String(this._eventId)])
+                || (this.event() && this.event().rrOffset);
             if (offset) {
                 this._reactorOffsetX = Math.round(Number(offset.x) || 0);
                 this._reactorOffsetY = Math.round(Number(offset.y) || 0);
@@ -507,7 +515,12 @@
      */
     ReactorPixel.createDecorSprites = function(spriteset) {
         const mapData = typeof $dataMap !== "undefined" ? $dataMap : null;
-        const decor = mapData && Array.isArray(mapData.rrDecor) ? mapData.rrDecor : null;
+        // The stamps live in the map's sidecar (reactor3d.decor), where the
+        // RPG Maker editor's whole-file rewrite cannot reach; older maps
+        // carried them as rrDecor inside Map###.json.
+        const side = mapData && mapData.reactor3d;
+        const decor = side && Array.isArray(side.decor) && side.decor.length ? side.decor
+            : (mapData && Array.isArray(mapData.rrDecor) ? mapData.rrDecor : null);
         if (!decor || !decor.length || typeof Sprite === "undefined") return;
         if (typeof Reactor3D !== "undefined" && Reactor3D.isMap3D && Reactor3D.isMap3D(mapData)) return;
         const tilemap = spriteset && spriteset._tilemap;

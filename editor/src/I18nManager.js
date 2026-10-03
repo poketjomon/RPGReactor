@@ -21556,24 +21556,42 @@ Object.assign(RR_I18N_STRINGS['th'], {'toolbar.label.new': 'ใหม่', 'tool
 Object.assign(RR_I18N_STRINGS['tr'], {'toolbar.label.new': 'Yeni', 'toolbar.label.open': 'Aç', 'toolbar.label.save': 'Kaydet', 'toolbar.label.undo': 'Geri al', 'toolbar.label.redo': 'Yinele', 'toolbar.label.playtest': 'Dene', 'toolbar.label.pencil': 'Kalem', 'toolbar.label.rectangle': 'Dikdörtgen', 'toolbar.label.circle': 'Daire', 'toolbar.label.fill': 'Doldur', 'toolbar.label.shadow': 'Gölge', 'toolbar.label.eraser': 'Sil', 'toolbar.label.layerAuto': 'Otomatik', 'toolbar.label.layer1': '1', 'toolbar.label.layer2': '2', 'toolbar.label.layer3': '3', 'toolbar.label.layer4': '4', 'toolbar.label.events': 'Olaylar', 'toolbar.label.freeTiles': 'Serbest', 'toolbar.label.database': 'V.Tabanı', 'toolbar.label.plugins': 'Eklenti', 'toolbar.label.resources': 'Varlık', 'toolbar.label.audio': 'Ses', 'toolbar.label.build': 'İnşa', 'toolbar.label.lighting': 'Işık', 'toolbar.label.media': 'Medya', 'toolbar.label.forge': 'Dövme'});
 
 // The map bar pixel-movement quick switch and its tooltip.
-Object.assign(RR_I18N_STRINGS['en'], {'workspace.pixel': 'Pixel', 'toolbar.title.pixelMovement': 'Pixel movement on this map'});
-Object.assign(RR_I18N_STRINGS['ja'], {'workspace.pixel': 'ピクセル', 'toolbar.title.pixelMovement': 'このマップのピクセル移動'});
-Object.assign(RR_I18N_STRINGS['es'], {'workspace.pixel': 'Píxeles', 'toolbar.title.pixelMovement': 'Movimiento en píxeles en este mapa'});
-Object.assign(RR_I18N_STRINGS['zh-Hant'], {'workspace.pixel': '像素', 'toolbar.title.pixelMovement': '此地圖的像素移動'});
-Object.assign(RR_I18N_STRINGS['zh-Hans'], {'workspace.pixel': '像素', 'toolbar.title.pixelMovement': '此地图的像素移动'});
-Object.assign(RR_I18N_STRINGS['ru'], {'workspace.pixel': 'Пиксели', 'toolbar.title.pixelMovement': 'Попиксельное движение на этой карте'});
-Object.assign(RR_I18N_STRINGS['pt'], {'workspace.pixel': 'Pixels', 'toolbar.title.pixelMovement': 'Movimento por pixels neste mapa'});
-Object.assign(RR_I18N_STRINGS['de'], {'workspace.pixel': 'Pixel', 'toolbar.title.pixelMovement': 'Pixelbewegung auf dieser Karte'});
-Object.assign(RR_I18N_STRINGS['fr'], {'workspace.pixel': 'Pixels', 'toolbar.title.pixelMovement': 'Déplacement au pixel sur cette carte'});
-Object.assign(RR_I18N_STRINGS['el'], {'workspace.pixel': 'Pixel', 'toolbar.title.pixelMovement': 'Κίνηση σε pixel σε αυτόν τον χάρτη'});
-Object.assign(RR_I18N_STRINGS['ko'], {'workspace.pixel': '픽셀', 'toolbar.title.pixelMovement': '이 맵의 픽셀 이동'});
-Object.assign(RR_I18N_STRINGS['ar'], {'workspace.pixel': 'بكسل', 'toolbar.title.pixelMovement': 'الحركة بالبكسل في هذه الخريطة'});
-Object.assign(RR_I18N_STRINGS['it'], {'workspace.pixel': 'Pixel', 'toolbar.title.pixelMovement': 'Movimento in pixel su questa mappa'});
-Object.assign(RR_I18N_STRINGS['pl'], {'workspace.pixel': 'Piksele', 'toolbar.title.pixelMovement': 'Ruch po pikselach na tej mapie'});
-Object.assign(RR_I18N_STRINGS['id'], {'workspace.pixel': 'Piksel', 'toolbar.title.pixelMovement': 'Gerak piksel di peta ini'});
-Object.assign(RR_I18N_STRINGS['vi'], {'workspace.pixel': 'Điểm ảnh', 'toolbar.title.pixelMovement': 'Di chuyển theo điểm ảnh trên bản đồ này'});
-Object.assign(RR_I18N_STRINGS['th'], {'workspace.pixel': 'พิกเซล', 'toolbar.title.pixelMovement': 'การเคลื่อนที่แบบพิกเซลบนแผนที่นี้'});
-Object.assign(RR_I18N_STRINGS['tr'], {'workspace.pixel': 'Piksel', 'toolbar.title.pixelMovement': 'Bu haritada piksel hareketi'});
+// The 2D Pixel card's note in Map Properties (pixel walking is the default).
+Object.assign(RR_TEXT_TRANSLATIONS["ja"], {"2D maps walk in pixels by default. Off keeps the stock tile steps on this map.": "2Dマップは既定でピクセル移動です。OFFにするとこのマップは従来のマス移動になります。"});
+Object.assign(RR_TEXT_TRANSLATIONS["es"], {"2D maps walk in pixels by default. Off keeps the stock tile steps on this map.": "Los mapas 2D se cruzan en píxeles por defecto. Desactivarlo mantiene los pasos por casilla en este mapa."});
+Object.assign(RR_TEXT_TRANSLATIONS["zh-Hant"], {"2D maps walk in pixels by default. Off keeps the stock tile steps on this map.": "2D 地圖預設以像素移動。關閉後此地圖恢復原本的整格移動。"});
+Object.assign(RR_TEXT_TRANSLATIONS["zh-Hans"], {"2D maps walk in pixels by default. Off keeps the stock tile steps on this map.": "2D 地图默认以像素移动。关闭后此地图恢复原本的整格移动。"});
+Object.assign(RR_TEXT_TRANSLATIONS["ru"], {"2D maps walk in pixels by default. Off keeps the stock tile steps on this map.": "2D-карты по умолчанию ходят пикселями. Выключение возвращает этой карте обычные шаги по клеткам."});
+Object.assign(RR_TEXT_TRANSLATIONS["pt"], {"2D maps walk in pixels by default. Off keeps the stock tile steps on this map.": "Mapas 2D andam em pixels por padrão. Desligado, este mapa volta aos passos por casa."});
+Object.assign(RR_TEXT_TRANSLATIONS["de"], {"2D maps walk in pixels by default. Off keeps the stock tile steps on this map.": "2D-Karten gehen standardmäßig in Pixeln. Aus schaltet diese Karte auf die gewohnten Schrittfelder zurück."});
+Object.assign(RR_TEXT_TRANSLATIONS["fr"], {"2D maps walk in pixels by default. Off keeps the stock tile steps on this map.": "Les cartes 2D se traversent en pixels par défaut. Désactivé, cette carte retrouve les déplacements case par case."});
+Object.assign(RR_TEXT_TRANSLATIONS["el"], {"2D maps walk in pixels by default. Off keeps the stock tile steps on this map.": "Οι 2D χάρτες κινούνται σε pixel από προεπιλογή. Ανενεργό, ο χάρτης αυτός κρατά τα βήματα σε πλακίδια."});
+Object.assign(RR_TEXT_TRANSLATIONS["ko"], {"2D maps walk in pixels by default. Off keeps the stock tile steps on this map.": "2D 맵은 기본으로 픽셀 단위로 이동합니다. 끄면 이 맵은 기존의 칸 이동을 유지합니다."});
+Object.assign(RR_TEXT_TRANSLATIONS["ar"], {"2D maps walk in pixels by default. Off keeps the stock tile steps on this map.": "تتحرك خرائط ثنائية الأبعاد بالبكسل افتراضيًا. عند الإيقاف تعود هذه الخريطة إلى الحركة المربّعة الأصلية."});
+Object.assign(RR_TEXT_TRANSLATIONS["it"], {"2D maps walk in pixels by default. Off keeps the stock tile steps on this map.": "Le mappe 2D si attraversano in pixel per predefinito. Disattivato, questa mappa torna ai passi a casella."});
+Object.assign(RR_TEXT_TRANSLATIONS["pl"], {"2D maps walk in pixels by default. Off keeps the stock tile steps on this map.": "Mapy 2D domyślnie chodzą po pikselach. Wyłączenie przywraca na tej mapie zwykłe kroki po polach."});
+Object.assign(RR_TEXT_TRANSLATIONS["id"], {"2D maps walk in pixels by default. Off keeps the stock tile steps on this map.": "Peta 2D berjalan per piksel secara bawaan. Dimatikan, peta ini kembali ke langkah per petak."});
+Object.assign(RR_TEXT_TRANSLATIONS["vi"], {"2D maps walk in pixels by default. Off keeps the stock tile steps on this map.": "Bản đồ 2D mặc định đi theo điểm ảnh. Tắt sẽ giữ bước đi theo ô cho bản đồ này."});
+Object.assign(RR_TEXT_TRANSLATIONS["th"], {"2D maps walk in pixels by default. Off keeps the stock tile steps on this map.": "แผนที่ 2D เดินแบบพิกเซลเป็นค่าเริ่มต้น ปิดจะกลับไปใช้การเดินทีละช่องของแผนที่นี้"});
+Object.assign(RR_TEXT_TRANSLATIONS["tr"], {"2D maps walk in pixels by default. Off keeps the stock tile steps on this map.": "2D haritalar varsayılan olarak piksel piksel yürür. Kapalıyken bu harita normal kare adımlarını kullanır."});
+Object.assign(RR_I18N_STRINGS['en'], {'workspace.pixel': 'Pixel', 'toolbar.title.pixelMovement': 'Pixel movement (default on for 2D maps)'});
+Object.assign(RR_I18N_STRINGS['ja'], {'workspace.pixel': 'ピクセル', 'toolbar.title.pixelMovement': 'ピクセル移動（2DマップではデフォルトON）'});
+Object.assign(RR_I18N_STRINGS['es'], {'workspace.pixel': 'Píxeles', 'toolbar.title.pixelMovement': 'Movimiento en píxeles (activado por defecto en mapas 2D)'});
+Object.assign(RR_I18N_STRINGS['zh-Hant'], {'workspace.pixel': '像素', 'toolbar.title.pixelMovement': '像素移動（2D 地圖預設開啟）'});
+Object.assign(RR_I18N_STRINGS['zh-Hans'], {'workspace.pixel': '像素', 'toolbar.title.pixelMovement': '像素移动（2D 地图默认开启）'});
+Object.assign(RR_I18N_STRINGS['ru'], {'workspace.pixel': 'Пиксели', 'toolbar.title.pixelMovement': 'Попиксельное движение (включено по умолчанию на 2D-картах)'});
+Object.assign(RR_I18N_STRINGS['pt'], {'workspace.pixel': 'Pixels', 'toolbar.title.pixelMovement': 'Movimento por pixels (ativado por padrão em mapas 2D)'});
+Object.assign(RR_I18N_STRINGS['de'], {'workspace.pixel': 'Pixel', 'toolbar.title.pixelMovement': 'Pixelbewegung (auf 2D-Karten standardmäßig aktiv)'});
+Object.assign(RR_I18N_STRINGS['fr'], {'workspace.pixel': 'Pixels', 'toolbar.title.pixelMovement': 'Déplacement au pixel (activé par défaut sur les cartes 2D)'});
+Object.assign(RR_I18N_STRINGS['el'], {'workspace.pixel': 'Pixel', 'toolbar.title.pixelMovement': 'Κίνηση σε pixel (ενεργή από προεπιλογή σε 2D χάρτες)'});
+Object.assign(RR_I18N_STRINGS['ko'], {'workspace.pixel': '픽셀', 'toolbar.title.pixelMovement': '픽셀 이동(2D 맵에서 기본 켜짐)'});
+Object.assign(RR_I18N_STRINGS['ar'], {'workspace.pixel': 'بكسل', 'toolbar.title.pixelMovement': 'الحركة بالبكسل (مفعّلة افتراضيًا في الخرائط ثنائية الأبعاد)'});
+Object.assign(RR_I18N_STRINGS['it'], {'workspace.pixel': 'Pixel', 'toolbar.title.pixelMovement': 'Movimento in pixel (attivo di predefinito sulle mappe 2D)'});
+Object.assign(RR_I18N_STRINGS['pl'], {'workspace.pixel': 'Piksele', 'toolbar.title.pixelMovement': 'Ruch po pikselach (domyślnie włączony na mapach 2D)'});
+Object.assign(RR_I18N_STRINGS['id'], {'workspace.pixel': 'Piksel', 'toolbar.title.pixelMovement': 'Gerak piksel (aktif bawaan untuk peta 2D)'});
+Object.assign(RR_I18N_STRINGS['vi'], {'workspace.pixel': 'Điểm ảnh', 'toolbar.title.pixelMovement': 'Di chuyển theo điểm ảnh (bật sẵn trên bản đồ 2D)'});
+Object.assign(RR_I18N_STRINGS['th'], {'workspace.pixel': 'พิกเซล', 'toolbar.title.pixelMovement': 'การเคลื่อนที่แบบพิกเซล (เปิดใช้ตามค่าเริ่มต้นในแผนที่ 2D)'});
+Object.assign(RR_I18N_STRINGS['tr'], {'workspace.pixel': 'Piksel', 'toolbar.title.pixelMovement': 'Piksel hareketi (2D haritalarda varsayılan açık)'});
 
 // The map bar free-placement checkbox tooltip.
 Object.assign(RR_I18N_STRINGS['en'], {'toolbar.title.freePlacement': 'Free placement on this map'});

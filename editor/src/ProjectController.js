@@ -2490,7 +2490,7 @@ class ProjectController {
         });
     }
 
-    /** The note with the tags the checkboxes stand for (<3d>, <pixel>, <freeplace>) taken out. */
+    /** The note with the tags the checkboxes stand for (<3d>, <pixel>/<nopixel>, <freeplace>) taken out. */
     noteWithout3D(note) {
         const elevation = this.mapElevation();
         let text = typeof note === 'string' ? note : '';
@@ -2503,7 +2503,7 @@ class ProjectController {
     populateMapPixelForm(mapData) {
         const pixel = document.getElementById('map-pixel-checkbox');
         if (typeof RRMapPixelTags === 'undefined' || !RRMapPixelTags) return;
-        if (pixel) pixel.checked = RRMapPixelTags.hasPixel(mapData);
+        if (pixel) pixel.checked = RRMapPixelTags.pixelEnabled(mapData);
     }
 
     /** Fill the 3D section: the switch, the room's height and its images. */
@@ -3359,11 +3359,13 @@ class ProjectController {
             else mapData.note = `${mapData.note}${mapData.note ? '\n' : ''}<3d>`;
         }
 
-        // The pixel switch: the checkbox leads; a tag typed into the note
-        // counts too, so the two can never disagree in the saved map. Old
-        // <freeplace> tags ride along harmlessly (free placement is always on).
+        // The pixel switch: pixel walking is the default, so the checkbox
+        // just manages the map's <nopixel> opt-out and the note can never
+        // disagree with it in the saved map. A <pixel:0.6> body size typed
+        // into the note survives either way. Old <freeplace> tags ride along
+        // harmlessly (free placement is always on).
         if (typeof RRMapPixelTags !== 'undefined' && RRMapPixelTags) {
-            const wantsPixel = !!document.getElementById('map-pixel-checkbox')?.checked || /<pixel(?::[^>]*)?>/i.test(noteText);
+            const wantsPixel = !!document.getElementById('map-pixel-checkbox')?.checked;
             RRMapPixelTags.setPixel(mapData, wantsPixel);
         }
 
@@ -3496,7 +3498,7 @@ class ProjectController {
         // properties dialog just saved.
         const pixelQuickBox = document.getElementById('map-pixel-movement');
         if (pixelQuickBox && typeof RRMapPixelTags !== 'undefined' && RRMapPixelTags) {
-            pixelQuickBox.checked = RRMapPixelTags.hasPixel(this.tilemapManager?.currentMap);
+            pixelQuickBox.checked = RRMapPixelTags.pixelEnabled(this.tilemapManager?.currentMap);
         }
         return true;
     }

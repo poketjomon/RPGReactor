@@ -1,6 +1,6 @@
-// Pixel movement and free placement (runtime/reactor_pixel.js): the <pixel>
-// map opt-in, body-box collision against tile edges and events, follower
-// chase, and the per-event rrOffset sprite shift.
+// Pixel movement and free placement (runtime/reactor_pixel.js): pixel walking
+// on by default with the <nopixel> opt-out, body-box collision against tile
+// edges and events, follower chase, and the per-event rrOffset sprite shift.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -101,17 +101,22 @@ function makePlayer(context, map, x = 5, y = 5) {
     return player;
 }
 
-test('the <pixel> tag opts a 2D map in and its absence leaves the stock grid alone', () => {
-    const on = sandbox();
+test('pixel walking is the default; <nopixel> opts one map out and <pixel:X> sizes the body', () => {
+    const on = sandbox({ note: '' });
     assert.equal(on.ReactorPixel.enabled(), true);
-    const off = sandbox({ note: '' });
+    const plain = sandbox();
+    assert.equal(plain.ReactorPixel.enabled(), true, 'a note with no pixel tags still walks in pixels');
+    const off = sandbox({ note: '<nopixel>' });
     assert.equal(off.ReactorPixel.enabled(), false);
-    // A 3D map never walks in pixels, tag or no tag.
-    const threeD = sandbox({ note: '<pixel>' });
+    // The opt-out wins even beside other pixel tags.
+    const both = sandbox({ note: '<pixel:0.6> <nopixel>' });
+    assert.equal(both.ReactorPixel.enabled(), false);
+    // A 3D map never walks in pixels, tags or no tag.
+    const threeD = sandbox({ note: '' });
     threeD.Reactor3D = { isMap3D: () => true };
     threeD.ReactorPixel._modeMemo = new WeakMap();
     assert.equal(threeD.ReactorPixel.enabled(), false, '3D stands down');
-    // The tag carries an optional body size, straight out of the note.
+    // The size tag still carries an optional body size, straight out of the note.
     const tuned = sandbox({ note: '<pixel:0.5>' });
     assert.equal(tuned.ReactorPixel.mapMode(tuned.$dataMap).body, 0.5);
     const silly = sandbox({ note: '<pixel:9>' });

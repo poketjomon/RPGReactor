@@ -3,8 +3,10 @@
  * spirit as the `<3d>` tag: a checkbox in Map Properties, a tag in the note,
  * and a map that stays ordinary RPG Maker data either way.
  *
- * `<pixel>` — the player walks in pixels instead of tile steps (an optional
- * body size rides along: `<pixel:0.6>`).
+ * Pixel movement — on for every 2D map by default (2026-10-03, matching the
+ * littleRPG_PixelMove packaging): the checkbox clears or restores a
+ * `<nopixel>` opt-out, and `<pixel:0.6>` typed in the note still sizes the
+ * body box.
  * `<freeplace>` — events may be placed and dragged at pixel granularity,
  * several to a cell, each carrying an `rrOffset` in pixels.
  */
@@ -13,10 +15,13 @@
 
     const PIXEL_TAG = '<pixel>';
     const PIXEL_PATTERN = /<pixel(?::\s*([0-9.]+))?>/i;
+    const NO_PIXEL_TAG = '<nopixel>';
+    const NO_PIXEL_PATTERN = /<nopixel>/i;
     const FREE_TAG = '<freeplace>';
     const FREE_PATTERN = /<freeplace>/i;
 
-    const hasPixel = mapData => PIXEL_PATTERN.test((mapData && mapData.note) || '');
+    /** A 2D map walks in pixels unless its note opts out with <nopixel>. */
+    const pixelEnabled = mapData => !NO_PIXEL_PATTERN.test((mapData && mapData.note) || '');
     const hasFreePlacement = mapData => FREE_PATTERN.test((mapData && mapData.note) || '');
 
     /** Append a tag to the note on its own line, and mirror it into meta. */
@@ -36,10 +41,11 @@
         return true;
     };
 
-    /** Mark the map pixel-walking, reporting whether anything changed. */
+    /** Set the map's pixel movement: enabled clears <nopixel>, disabled adds it. */
     const setPixel = (mapData, enabled) => {
         if (!mapData) return false;
-        return enabled ? appendTag(mapData, PIXEL_TAG, 'pixel', true) : removeTag(mapData, PIXEL_PATTERN, 'pixel');
+        return enabled ? removeTag(mapData, NO_PIXEL_PATTERN, 'nopixel')
+            : appendTag(mapData, NO_PIXEL_TAG, 'nopixel', true);
     };
 
     /** Mark the map free-placeable, reporting whether anything changed. */
@@ -48,15 +54,16 @@
         return enabled ? appendTag(mapData, FREE_TAG, 'freeplace', true) : removeTag(mapData, FREE_PATTERN, 'freeplace');
     };
 
-    /** The note with both pixel tags taken out, for the note textarea. */
+    /** The note with the pixel tags taken out, for the note textarea. */
     const noteWithoutTags = note => {
         const text = typeof note === 'string' ? note : '';
-        return text.replace(PIXEL_PATTERN, '').replace(FREE_PATTERN, '').replace(/\n{3,}/g, '\n\n').trim();
+        return text.replace(NO_PIXEL_PATTERN, '').replace(PIXEL_PATTERN, '').replace(FREE_PATTERN, '')
+            .replace(/\n{3,}/g, '\n\n').trim();
     };
 
     const api = {
-        PIXEL_TAG, PIXEL_PATTERN, FREE_TAG, FREE_PATTERN,
-        hasPixel, hasFreePlacement, setPixel, setFreePlacement, noteWithoutTags
+        PIXEL_TAG, PIXEL_PATTERN, NO_PIXEL_TAG, NO_PIXEL_PATTERN, FREE_TAG, FREE_PATTERN,
+        pixelEnabled, hasFreePlacement, setPixel, setFreePlacement, noteWithoutTags
     };
 
     root.RRMapPixelTags = api;
