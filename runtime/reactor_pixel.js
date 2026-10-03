@@ -318,16 +318,24 @@
         if (there === here) return v;
         // The tile line being entered: its near side, index `wall`.
         const wall = there;
+        // A body taller than one tile straddles rows, and demanding every
+        // overlapped row's blessing jammed it against furniture it merely
+        // brushed. One clear row lets it slip past the corner; only when
+        // every row says no does the wall take hold.
+        let anyClear = false;
         for (const cell of across) {
             const fromX = horizontal ? (positive ? wall - 1 : wall + 1) : cell;
             const fromY = horizontal ? cell : (positive ? wall - 1 : wall + 1);
-            const blocked = !this.edgePassable(fromX, fromY, direction)
-                || this.cellBlockedFor(character, horizontal ? wall : cell, horizontal ? cell : wall);
-            if (blocked) {
-                const room = (positive ? wall - gap : wall + 1 + gap) - leading;
-                if (positive ? room <= 0 : room >= 0) return 0;
-                return positive ? Math.min(v, room) : Math.max(v, room);
+            if (this.edgePassable(fromX, fromY, direction)
+                && !this.cellBlockedFor(character, horizontal ? wall : cell, horizontal ? cell : wall)) {
+                anyClear = true;
+                break;
             }
+        }
+        if (!anyClear) {
+            const room = (positive ? wall - gap : wall + 1 + gap) - leading;
+            if (positive ? room <= 0 : room >= 0) return 0;
+            return positive ? Math.min(v, room) : Math.max(v, room);
         }
         return v;
     };
@@ -337,6 +345,91 @@
         const offset = event && event.rrOffset;
         if (!offset) return { x: 0, y: 0 };
         return { x: Math.round(Number(offset.x) || 0), y: Math.round(Number(offset.y) || 0) };
+    };
+
+    /**
+     * A* over walkable tile edges, four directions. Returns the tile path
+     * from start (exclusive) to goal (inclusive), [] when already there,
+     * or null when no way through — the greedy stock search returned 0 and
+     * left the walker pinned to a wall.
+     */
+    ReactorPixel.findPath = function(player, sx, sy, tx, ty) {
+        const map = $gameMap;
+        if (!map.isValid(sx, sy) || !map.isValid(tx, ty)) return null;
+        if (sx === tx && sy === ty) return [];
+        const width = map.width(), height = map.height(), size = width * height;
+        const dirs = [[2, 0, 1], [4, -1, 0], [6, 1, 0], [8, 0, -1]];
+        const hCost = (x, y) => Math.abs(map.deltaX(x, tx)) + Math.abs(map.deltaY(y, ty));
+        const start = sy * width + sx, goal = ty * width + tx;
+        const came = new Int32Array(size).fill(-1);
+        const gScore = new Float64Array(size).fill(Infinity);
+        const closed = new Uint8Array(size);
+        const heap = [];
+        const push = (f, idx) => {
+            heap.push([f, idx]);
+            let i = heap.length - 1;
+            while (i > 0) {
+                const p = (i - 1) >> 1;
+                if (heap[p][0] <= heap[i][0]) break;
+                [heap[p], heap[i]] = [heap[i], heap[p]];
+                i = p;
+            }
+        };
+        const pop = () => {
+            const top = heap[0];
+            const last = heap.pop();
+            if (heap.length) {
+                heap[0] = last;
+                let i = 0;
+                for (;;) {
+                    const l = i * 2 + 1, r = l + 1;
+                    let m = i;
+                    if (l < heap.length && heap[l][0] < heap[m][0]) m = l;
+                    if (r < heap.length && heap[r][0] < heap[m][0]) m = r;
+                    if (m === i) break;
+                    [heap[m], heap[i]] = [heap[i], heap[m]];
+                    i = m;
+                }
+            }
+            return top;
+        };
+        gScore[start] = 0;
+        push(hCost(sx, sy), start);
+        let found = false;
+        while (heap.length) {
+            const current = pop()[1];
+            if (current === goal) { found = true; break; }
+            if (closed[current]) continue;
+            closed[current] = 1;
+            const cx = current % width, cy = (current / width) | 0;
+            for (const [d] of dirs) {
+                const nx = map.roundXWithDirection(cx, d);
+                const ny = map.roundYWithDirection(cy, d);
+                // The first step out of a straddled, blocked start tile is
+                // judged by the destination tile alone.
+                if (current !== start && !this.edgePassable(cx, cy, d)) continue;
+                if (this.cellBlockedFor(player, nx, ny)) continue;
+                if (current === start && !map.isPassable(nx, ny, d)) continue;
+                const ni = ny * width + nx;
+                if (closed[ni]) continue;
+                const tentative = gScore[current] + 1;
+                if (tentative < gScore[ni]) {
+                    gScore[ni] = tentative;
+                    came[ni] = current;
+                    push(tentative + hCost(nx, ny), ni);
+                }
+            }
+        }
+        if (!found) return null;
+        const tiles = [];
+        let cur = goal;
+        while (cur !== start) {
+            tiles.push({ x: cur % width, y: (cur / width) | 0 });
+            cur = came[cur];
+            if (cur < 0) return null;
+        }
+        tiles.reverse();
+        return tiles;
     };
 
     //-------------------------------------------------------------------------
@@ -355,7 +448,61 @@
         const fromInput = direction > 0;
         if (fromInput) $gameTemp.clearDestination();
         if (!direction && $gameTemp.isDestinationValid()) {
-            direction = player.findDirectionTo($gameTemp.destinationX(), $gameTemp.destinationY());
+            // A click walks an A* path: steer straight at each waypoint's
+            // centre, in pixels, and give the destination up quietly when
+            // nothing can reach it (or a door closes mid-walk for a while).
+            const tx = $gameTemp.destinationX(), ty = $gameTemp.destinationY();
+            let path = player._rrPixelPath;
+            if (!path || path.tx !== tx || path.ty !== ty) {
+                path = player._rrPixelPath = { tx, ty, i: 0, stuck: 0,
+                    tiles: this.findPath(player, player.x, player.y, tx, ty) };
+            }
+            if (!path.tiles) {
+                $gameTemp.clearDestination();
+            } else {
+                const speed = player.distancePerFrame();
+                // Turn on the spot at each corner: skipping ahead to a
+                // farther waypoint cut the corner diagonally, and a body
+                // wider than the path swept the furniture standing on it.
+                // Only waypoints in a straight line with the next may be
+                // passed in stride.
+                let wp = path.tiles[path.i];
+                while (wp) {
+                    const next = path.tiles[path.i + 1];
+                    const dx = $gameMap.deltaX(wp.x + 0.5, player._realX);
+                    const dy = $gameMap.deltaY(wp.y + 0.5, player._realY);
+                    const dist = Math.hypot(dx, dy);
+                    const straightOn = next && (next.x === wp.x || next.y === wp.y);
+                    if (dist > (straightOn ? speed * 0.55 : 0.02)) break;
+                    path.i++;
+                    wp = path.tiles[path.i];
+                }
+                if (!wp) {
+                    // The whole path is under our feet.
+                    $gameTemp.clearDestination();
+                    player._reactorPixelMoving = false;
+                    return;
+                }
+                const dx = $gameMap.deltaX(wp.x + 0.5, player._realX);
+                const dy = $gameMap.deltaY(wp.y + 0.5, player._realY);
+                const dist = Math.hypot(dx, dy) || 1e-9;
+                const stride = Math.min(speed, dist);
+                const vx = dx / dist * stride;
+                const vy = dy / dist * stride;
+                player.setDirection(Math.abs(vx) >= Math.abs(vy) ? (vx > 0 ? 6 : 4) : (vy > 0 ? 2 : 8));
+                const beforeX = player._realX;
+                const beforeY = player._realY;
+                this.integrate(player, vx, vy, player.isThrough() || player.isDebugThrough());
+                player._x = Math.round(player._realX);
+                player._y = Math.round(player._realY);
+                const moved = player._realX !== beforeX || player._realY !== beforeY;
+                player._reactorPixelMoving = moved;
+                path.stuck = moved ? 0 : path.stuck + 1;
+                if (moved) this.crossedTiles(player, beforeX, beforeY);
+                player.refreshBushDepth();
+                if (path.stuck > 90) $gameTemp.clearDestination();
+                return;
+            }
         }
         if (!direction) {
             player._reactorPixelMoving = false;
@@ -626,6 +773,22 @@
             (entry.above ? tilemap._upperLayer : tilemap._lowerLayer).addChild(sprite);
         }
     };
+
+    if (typeof Game_Player !== "undefined") {
+        // A click walk must survive a blocked frame: the stock engine clears
+        // the touch destination the moment a frame moves nothing, which cut
+        // an A* walk short at the first wall graze. The path's own stuck
+        // counter is what gives the destination up when truly wedged.
+        const _updateNonmoving = Game_Player.prototype.updateNonmoving;
+        Game_Player.prototype.updateNonmoving = function(wasMoving, sceneActive) {
+            const path = this._rrPixelPath;
+            if (ReactorPixel.enabled() && path && path.tiles
+                && typeof $gameTemp !== "undefined" && $gameTemp.isDestinationValid()) {
+                return _updateNonmoving.call(this, true, sceneActive);
+            }
+            return _updateNonmoving.apply(this, arguments);
+        };
+    }
 
     if (typeof Spriteset_Map !== "undefined") {
         const _createCharacters = Spriteset_Map.prototype.createCharacters;

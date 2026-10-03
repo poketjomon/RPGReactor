@@ -20,10 +20,13 @@ function makeMap(options = {}) {
     const width = options.width || 10;
     const height = options.height || 10;
     return {
-        width, height,
+        width: () => width,
+        height: () => height,
         isLoopHorizontal: () => !!options.loopX,
         isLoopVertical: () => !!options.loopY,
         isValid: (x, y) => x >= 0 && x < width && y >= 0 && y < height,
+        deltaX: (x1, x2) => x1 - x2,
+        deltaY: (y1, y2) => y1 - y2,
         roundXWithDirection: (x, d) => x + (d === 6 ? 1 : d === 4 ? -1 : 0),
         roundYWithDirection: (y, d) => y + (d === 2 ? 1 : d === 8 ? -1 : 0),
         isPassable: (x, y) => !walls.has(`${x},${y}`),
@@ -293,4 +296,50 @@ test('decor stamps resolve plain-sheet and A5 tiles, and refuse autotiles', () =
     // Autotiles have no lone shape; the layer refuses them.
     assert.equal(c.ReactorPixel.decorTileSource(2048), null);
     assert.equal(c.ReactorPixel.decorTileSource(1536 + 128), null);
+});
+
+test('a click pathfinds around a wall, and gives up when nothing gets through', () => {
+    const c = sandbox();
+    // A wall column at x=3 with one gap at y=5.
+    const walls = [];
+    for (let y = 0; y < 10; y++) if (y !== 5) walls.push(`3,${y}`);
+    c.$gameMap = makeMap({ walls });
+    const player = makePlayer(c, c.$gameMap, 0, 0);
+    const path = c.ReactorPixel.findPath(player, 0, 0, 6, 0);
+    assert.ok(Array.isArray(path) && path.length > 0, 'a way around exists');
+    assert.equal(path[path.length - 1].x, 6, 'ends at the click');
+    assert.equal(path[path.length - 1].y, 0);
+    assert.ok(path.some(step => step.x === 3 && step.y === 5), 'threads the gap');
+    // Every step is a neighbouring tile.
+    let px = 0, py = 0;
+    for (const step of path) {
+        assert.equal(Math.abs(step.x - px) + Math.abs(step.y - py), 1);
+        px = step.x; py = step.y;
+    }
+    // A solid wall: no path, and the walker stops instead of pushing forever.
+    const solid = [];
+    for (let y = 0; y < 10; y++) solid.push(`3,${y}`);
+    c.$gameMap = makeMap({ walls: solid });
+    assert.equal(c.ReactorPixel.findPath(player, 0, 0, 6, 0), null, 'unreachable says so');
+    // Already standing there: nothing to walk.
+    assert.equal(c.ReactorPixel.findPath(player, 2, 2, 2, 2).length, 0, 'standing there already');
+});
+
+test('a straddling body slips past a corner it only brushes', () => {
+    // The body at ry=5.4 spans rows 5 and 6; furniture blocks (7,6) only.
+    // One clear row (5) lets it walk on — only both rows walled stops it.
+    const walkEast = (c, player) => {
+        for (let i = 0; i < 60 && c.ReactorPixel.integrate(player, 0.25, 0, false); i++);
+        return Math.round(player._realX * 100) / 100;
+    };
+    const brushed = sandbox({ note: '<pixel>' });
+    brushed.$gameMap = makeMap({ walls: ['7,6'] });
+    const brushPlayer = makePlayer(brushed, brushed.$gameMap, 5, 5);
+    brushPlayer._realY = 5.4;
+    assert.ok(walkEast(brushed, brushPlayer) > 7.5, 'passed the corner it merely brushes');
+    const walled = sandbox({ note: '<pixel>' });
+    walled.$gameMap = makeMap({ walls: ['7,5', '7,6'] });
+    const wallPlayer = makePlayer(walled, walled.$gameMap, 5, 5);
+    wallPlayer._realY = 5.4;
+    assert.ok(walkEast(walled, wallPlayer) < 6.2, 'both rows walled: hugs the wall');
 });
