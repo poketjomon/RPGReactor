@@ -421,8 +421,13 @@ class RPGReactor {
         // while the tool holds the map and unticks when another tool takes it.
         document.getElementById('map-free-placement')?.addEventListener('change', (event) => {
             const box = event.currentTarget;
-            this.toggleDecorMode();
-            box.checked = !!this.decorManager?.active;
+            if (box.checked) {
+                this.toggleDecorMode(); // enter the stamp tool
+            } else if (this.decorManager?.active) {
+                this.toggleDecorMode(); // leave it
+            }
+            // In Event mode the box stays informational: events place freely
+            // by default, so an untick there has nothing to switch off.
         });
         // The box follows the map once one is open (each map remembers its
         // own view); with no map yet it starts clear, and three.js is not
@@ -859,7 +864,10 @@ class RPGReactor {
         }
         const placeBox = typeof document !== 'undefined' && document.getElementById
             ? document.getElementById('map-free-placement') : null;
-        if (placeBox) placeBox.checked = owner === 'decor';
+        // Free placement stays lit through an Event-mode detour — events
+        // place freely too — and only goes dark when the map returns to the
+        // pencil or another tool takes it.
+        if (placeBox) placeBox.checked = owner === 'decor' || owner === 'events';
         document.querySelectorAll('.tool-draw-mode').forEach(button=>{
             const active=owner==='paint'&&!map?.shadowPenMode&&button.dataset.tool===map?.currentTool;
             button.classList.toggle('active',active);button.setAttribute('aria-pressed',String(active));
