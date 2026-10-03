@@ -398,7 +398,12 @@ class TilesetPaletteViewer {
         // and one key for both lit both tabs and showed sheet B while a
         // building was being laid.
         if (layerName !== 'M' && layerName !== 'T' && layerName !== 'P') this.lastPaintLayer = layerName;
-        window.reactor?.claimMapTool?.(layerName === 'M' ? 'models' : layerName === 'T' ? 'terrain' : layerName === 'P' ? 'pieces' : 'paint');
+        const claimed = layerName === 'M' ? 'models' : layerName === 'T' ? 'terrain' : layerName === 'P' ? 'pieces' : 'paint';
+        // A tab click while free placement holds the map is picking a sheet
+        // to stamp from, not a request to go back to painting.
+        if (!(window.reactor?.mapTool === 'decor' && claimed === 'paint')) {
+            window.reactor?.claimMapTool?.(claimed);
+        }
 
         // Update tab styles
         document.querySelectorAll('.tileset-layer-tab').forEach(tab => {
@@ -918,7 +923,9 @@ class TilesetPaletteViewer {
     }
 
     updateTileSelection(start, end) {
-        if (window.reactor?.mapTool !== 'paint') window.reactor?.claimMapTool?.('paint');
+        // Picking a stamp must not steal the map from free placement: the
+        // selection just updates the ghost on its next move.
+        if (window.reactor?.mapTool !== 'paint' && window.reactor?.mapTool !== 'decor') window.reactor?.claimMapTool?.('paint');
         const canvas = document.getElementById('tileset-preview-canvas');
         if (!canvas) return;
         if (this.mapEditor?.mapStamp) this.mapEditor.clearMapStamp();

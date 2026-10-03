@@ -12,6 +12,11 @@
  * are refused, since a lone autotile has no shape without neighbours —
  * the plain sheets (B-E, Reactor's F/G, and A5) stamp exactly.
  */
+function tm_container_add_ghost(manager) {
+    const tm = manager.tilemapManager;
+    if (tm?.container) tm.container.addChild(manager._ghost);
+}
+
 class DecorManager {
     constructor(projectController) {
         this.projectController = projectController;
@@ -28,6 +33,10 @@ class DecorManager {
         this._belowContainer = null;
         this._aboveContainer = null;
         this._highlight = null;
+        this._ghost = null;
+        this._ghostTileId = 0;
+        this._placing = false;
+        this._lastStamp = { x: 0, y: 0 };
         this.onUndoStateChange = null;
     }
 
@@ -54,6 +63,7 @@ class DecorManager {
         this.clearSelection();
         this.clearUndoHistory();
         this.render();
+        this.redrawFineGrid();
     }
 
     setActive(enabled) {
@@ -63,6 +73,8 @@ class DecorManager {
             return;
         }
         this.active = enabled;
+        if (!enabled) this.hideGhost();
+        this.redrawFineGrid();
         if (enabled) {
             this.ensureContainers();
             this.setupInteraction();
@@ -92,6 +104,49 @@ class DecorManager {
         return this.tilemapManager?.TILE_HEIGHT || 48;
     }
 
+    /**
+     * The assist grid of free placement: with the map's Grid box ticked,
+     * stamps snap to, and the map shows, a fine grid of SNAP pixels (six
+     * to a 48px tile); with it unticked, placement is fully free at one
+     * pixel and no fine grid is drawn.
+     */
+    static SNAP = 8;
+
+    snapSize() {
+        return this.tilemapManager?.gridVisible === false ? 1 : DecorManager.SNAP;
+    }
+
+    snapValue(v) {
+        const s = this.snapSize();
+        return s <= 1 ? Math.round(v) : Math.round(v / s) * s;
+    }
+
+    /** Draw (or clear) the fine assist grid over the map's tiles. */
+    redrawFineGrid() {
+        this.ensureContainers();
+        const tm = this.tilemapManager;
+        if (!tm || !tm.container || !this._belowContainer) return;
+        if (!this._fineGrid) {
+            this._fineGrid = new PIXI.Graphics();
+            tm.container.addChildAt(this._fineGrid, tm.container.children.indexOf(this._belowContainer));
+        }
+        this._fineGrid.clear();
+        const map = this.currentMap;
+        if (!this.active || !map || this.snapSize() <= 1) return;
+        const s = DecorManager.SNAP;
+        const w = map.width * this.tileWidth();
+        const h = map.height * this.tileHeight();
+        for (let x = s; x < w; x += s) {
+            this._fineGrid.moveTo(x, 0);
+            this._fineGrid.lineTo(x, h);
+        }
+        for (let y = s; y < h; y += s) {
+            this._fineGrid.moveTo(0, y);
+            this._fineGrid.lineTo(w, y);
+        }
+        this._fineGrid.stroke({ color: 0x9aa7b0, width: 0.5, alpha: 0.22 });
+    }
+
     decorList() {
         if (!this.currentMap) return null;
         if (!Array.isArray(this.currentMap.rrDecor)) this.currentMap.rrDecor = [];
@@ -101,6 +156,21 @@ class DecorManager {
     ensureContainers() {
         const tm = this.tilemapManager;
         if (!tm || !tm.container) return;
+        // A reopened project replaces the map canvas; the old layers would
+        // keep rendering into a detached container, invisible forever.
+        if (this._belowContainer && !this._belowContainer.destroyed && this._belowContainer.parent !== tm.container) {
+            this._belowContainer.destroy({ children: true });
+            this._aboveContainer?.destroy({ children: true });
+            this._highlight?.destroy();
+            this._ghost?.destroy({ children: true });
+            this._belowContainer = null;
+            this._aboveContainer = null;
+            this._highlight = null;
+            this._ghost = null;
+            this._fineGrid?.destroy();
+            this._fineGrid = null;
+            this._ghostTileId = 0;
+        }
         if (!this._belowContainer || this._belowContainer.destroyed) {
             this._belowContainer = new PIXI.Container();
             this._aboveContainer = new PIXI.Container();
@@ -173,6 +243,47 @@ class DecorManager {
         this._highlight.visible = true;
     }
 
+    /**
+     * The free-floating preview under the cursor: the selected tile at
+     * exactly where a click would land, never snapped to a cell. This is
+     * what makes the mode read as Tiled-style placement rather than
+     * painting with extra steps.
+     */
+    showGhost(tileId, px, py) {
+        this.ensureContainers();
+        if (!this._ghost) {
+            this._ghost = new PIXI.Container();
+            this._ghost.alpha = 0.65;
+            this._ghost.visible = false;
+            if (this._aboveContainer) tm_container_add_ghost(this);
+        }
+        if (this._ghostTileId !== tileId) {
+            this._ghost.removeChildren().forEach(child => child.destroy({ children: true }));
+            const sprite = this.eventManager?.createTileSprite
+                ? this.eventManager.createTileSprite(tileId) : null;
+            if (sprite) {
+                sprite.x = 0;
+                sprite.y = 0;
+                this._ghost.addChild(sprite);
+            } else {
+                const box = new PIXI.Graphics();
+                box.rect(0, 0, this.tileWidth(), this.tileHeight());
+                box.stroke({ color: 0xffd700, width: 1.5 });
+                this._ghost.addChild(box);
+            }
+            this._ghostTileId = tileId;
+        }
+        this._ghost.x = this.snapValue(px - this.tileWidth() / 2);
+        this._ghost.y = this.snapValue(py - this.tileHeight() / 2);
+        this._ghost.visible = true;
+    }
+
+    hideGhost() {
+        if (this._ghost) this._ghost.visible = false;
+        this._ghostTileId = 0;
+        this._placing = false;
+    }
+
     clearSelection() {
         this.selected = null;
         this.updateHighlight();
@@ -194,19 +305,19 @@ class DecorManager {
         return found;
     }
 
-    stamp(tileId, px, py) {
+    stamp(tileId, px, py, skipHistory = false) {
         const list = this.decorList();
         if (!list || !DecorManager.stampableTileId(tileId)) {
             this.status('Autotile sheets (A1-A4) cannot be stamped freely — pick a B-E, F/G or A5 tile.');
             return null;
         }
-        this.saveState();
+        if (!skipHistory) this.saveState();
         const w = this.tileWidth();
         const h = this.tileHeight();
         const entry = {
             tileId,
-            x: Math.round(Math.max(-w / 2, Math.min(px - w / 2, this.currentMap.width * w - w / 2))),
-            y: Math.round(Math.max(-h / 2, Math.min(py - h / 2, this.currentMap.height * h - h / 2))),
+            x: this.snapValue(Math.max(-w / 2, Math.min(px - w / 2, this.currentMap.width * w - w / 2))),
+            y: this.snapValue(Math.max(-h / 2, Math.min(py - h / 2, this.currentMap.height * h - h / 2))),
             above: false
         };
         list.push(entry);
@@ -217,8 +328,8 @@ class DecorManager {
     moveDecor(entry, px, py) {
         const w = this.tileWidth();
         const h = this.tileHeight();
-        entry.x = Math.round(Math.max(-w / 2, Math.min(px, this.currentMap.width * w - w / 2)));
-        entry.y = Math.round(Math.max(-h / 2, Math.min(py, this.currentMap.height * h - h / 2)));
+        entry.x = this.snapValue(Math.max(-w / 2, Math.min(px, this.currentMap.width * w - w / 2)));
+        entry.y = this.snapValue(Math.max(-h / 2, Math.min(py, this.currentMap.height * h - h / 2)));
         this.render();
     }
 
@@ -313,31 +424,64 @@ class DecorManager {
                 container.cursor = 'grabbing';
                 return;
             }
-            // Empty ground: stamp the palette's selected tile here.
+            // Empty ground: stamp the palette's selected tile under the
+            // cursor, then keep stamping while the button drags — one undo
+            // step for the whole stroke, like a paintbrush.
             const tileId = this.selectedPaletteTileId();
             if (tileId > 0) {
-                this.stamp(tileId, pos.x, pos.y);
+                if (DecorManager.stampableTileId(tileId)) {
+                    this._placing = true;
+                    this._lastStamp = { x: pos.x, y: pos.y };
+                    this.saveState();
+                    this.stamp(tileId, pos.x, pos.y, true);
+                } else {
+                    this.status('Autotile sheets (A1-A4) cannot be stamped freely — pick a B-E, F/G or A5 tile.');
+                }
             } else {
                 this.clearSelection();
+                this.hideGhost();
                 this.status('Pick a tile in the palette first, then click the map to stamp it.');
             }
         });
 
         on('pointermove', event => {
-            if (!this.isDragging || !this.draggedDecor) return;
             const pos = event.data.getLocalPosition(container);
-            this.moveDecor(this.draggedDecor, pos.x - this.dragOffset.x, pos.y - this.dragOffset.y);
-            this.updateHighlight();
+            if (this.isDragging && this.draggedDecor) {
+                this.moveDecor(this.draggedDecor, pos.x - this.dragOffset.x, pos.y - this.dragOffset.y);
+                this.updateHighlight();
+                return;
+            }
+            // The free ghost trails the cursor whenever a stampable tile is picked.
+            const tileId = this.selectedPaletteTileId();
+            if (tileId > 0 && DecorManager.stampableTileId(tileId)) {
+                this.showGhost(tileId, pos.x, pos.y);
+            } else {
+                this.hideGhost();
+            }
+            if (!this._placing) return;
+            const dx = pos.x - this._lastStamp.x;
+            const dy = pos.y - this._lastStamp.y;
+            if (dx * dx + dy * dy >= 144) {
+                this._lastStamp = { x: pos.x, y: pos.y };
+                this.stamp(tileId, pos.x, pos.y, true);
+            }
         });
 
         const finishDrag = () => {
             this.isDragging = false;
             this.draggedDecor = null;
             this.dragOffset = { x: 0, y: 0 };
+            this._placing = false;
             if (container) container.cursor = 'default';
         };
         on('pointerup', finishDrag);
         on('pointerupoutside', finishDrag);
+        on('pointerleave', () => this.hideGhost());
+        // The Grid box toggles the fine assist grid while the tool holds the
+        // map, and returns the stock cell grid when it hands it back.
+        if (typeof window !== 'undefined') {
+            window.addEventListener('rr-show-grid-changed', () => this.redrawFineGrid());
+        }
 
         on('rightdown', event => {
             event.stopPropagation();
