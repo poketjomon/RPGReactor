@@ -348,6 +348,34 @@
     };
 
     /**
+     * A click that lands on (or behind) a wall should still walk somewhere:
+     * ring outward from the click for the closest tile a path can actually
+     * reach, so the body ends up beside the click like the stock walker
+     * would, instead of standing still because the click itself is solid.
+     */
+    ReactorPixel.nearestReachable = function(player, tx, ty, maxRadius) {
+        maxRadius = maxRadius || 6;
+        if (this.findPath(player, player.x, player.y, tx, ty) !== null) {
+            return { x: tx, y: ty };
+        }
+        const map = $gameMap;
+        for (let r = 1; r <= maxRadius; r++) {
+            for (let dy = -r; dy <= r; dy++) {
+                for (let dx = -r; dx <= r; dx++) {
+                    if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+                    const x = tx + dx;
+                    const y = ty + dy;
+                    if (!map.isValid(x, y)) continue;
+                    if (this.findPath(player, player.x, player.y, x, y) !== null) {
+                        return { x, y };
+                    }
+                }
+            }
+        }
+        return null;
+    };
+
+    /**
      * A* over walkable tile edges, four directions. Returns the tile path
      * from start (exclusive) to goal (inclusive), [] when already there,
      * or null when no way through — the greedy stock search returned 0 and
@@ -454,8 +482,14 @@
             const tx = $gameTemp.destinationX(), ty = $gameTemp.destinationY();
             let path = player._rrPixelPath;
             if (!path || path.tx !== tx || path.ty !== ty) {
+                // The goal is the click itself, or when that tile is solid
+                // the closest reachable one beside it.
+                const goal = this.nearestReachable(player, tx, ty);
                 path = player._rrPixelPath = { tx, ty, i: 0, stuck: 0,
-                    tiles: this.findPath(player, player.x, player.y, tx, ty) };
+                    tiles: goal ? this.findPath(player, player.x, player.y, goal.x, goal.y) : null };
+                if (!goal && typeof console !== "undefined") {
+                    console.info("ReactorPixel: no way to (" + tx + "," + ty + ") — the click is given up.");
+                }
             }
             if (!path.tiles) {
                 $gameTemp.clearDestination();

@@ -74,6 +74,7 @@ function makePlayer(context, map, x = 5, y = 5) {
     const player = new context.Game_Player();
     Object.assign(player, {
         _x: x, _y: y, _realX: x, _realY: y,
+        x, y,
         _moveSpeed: 4, _dashing: false, _direction: 2,
         _directionFix: false, _through: false, _reactorPixelMoving: false,
         _vehicleType: 'walk', _vehicleGettingOn: false, _vehicleGettingOff: false,
@@ -342,4 +343,29 @@ test('a straddling body slips past a corner it only brushes', () => {
     const wallPlayer = makePlayer(walled, walled.$gameMap, 5, 5);
     wallPlayer._realY = 5.4;
     assert.ok(walkEast(walled, wallPlayer) < 6.2, 'both rows walled: hugs the wall');
+});
+
+test('a click on a solid tile walks to the closest reachable one instead', () => {
+    const c = sandbox();
+    // A solid wall column at x=3 with one gap at y=5.
+    const walls = [];
+    for (let y = 0; y < 10; y++) if (y !== 5) walls.push(`3,${y}`);
+    c.$gameMap = makeMap({ walls });
+    const player = makePlayer(c, c.$gameMap, 0, 0);
+    // Clicking the wall tile itself: the walker ends up beside the click,
+    // on the first reachable tile the ring outward finds.
+    const goal = c.ReactorPixel.nearestReachable(player, 3, 0);
+    assert.ok(goal, 'a goal beside the click exists');
+    assert.equal(goal.x, 2);
+    assert.equal(goal.y, 0);
+    // A click with nothing reachable in range gives up honestly.
+    const solid = [];
+    for (let y = 0; y < 10; y++) solid.push(`3,${y}`);
+    c.$gameMap = makeMap({ walls: solid });
+    assert.equal(c.ReactorPixel.nearestReachable(player, 6, 0, 3), null, 'walled off: no goal');
+    // And a plain open click resolves to itself.
+    c.$gameMap = makeMap({ walls });
+    const plain = c.ReactorPixel.nearestReachable(player, 6, 0);
+    assert.equal(plain.x, 6);
+    assert.equal(plain.y, 0);
 });
