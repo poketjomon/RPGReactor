@@ -508,11 +508,9 @@ class EventManager {
             // Update selection to this tile
             this.selectTile(tileX, tileY);
 
-            // Check if there's an event at this position (by pixel point when
-            // the map places events off the grid)
-            const eventAtPos = this.freePlacementEnabled()
-                ? this.getEventAtPoint(pos.x, pos.y)
-                : this.getEventAt(tileX, tileY);
+        // Pick by pixel point when the map places events off the grid
+        const eventAtPos = this.getEventAtPoint(pos.x, pos.y)
+                || this.getEventAt(tileX, tileY);
 
             // Use the original mouse event position for context menu
             const mouseX = event.data.originalEvent.clientX;
@@ -616,11 +614,9 @@ class EventManager {
         this._lastMapClickY = tileY;
         this.selectTile(tileX, tileY);
 
-        // Free placement picks by pixel point (events may share a cell);
-        // the stock grid keeps its one-event-per-cell lookup.
-        const eventAtPos = this.freePlacementEnabled()
-            ? this.getEventAtPoint(pos.x, pos.y)
-            : (this.getEventAt(tileX, tileY) || null);
+        // Pick by pixel point: events may share a cell and carry offsets, and
+        // with neither present this matches the plain cell lookup.
+        const eventAtPos = this.getEventAtPoint(pos.x, pos.y) || null;
         if (!eventAtPos && this.tilesetPaletteViewer) {
             const selectedTiles = this.tilesetPaletteViewer.getSelectedTiles();
             if (selectedTiles && selectedTiles.length > 0) {
@@ -628,9 +624,7 @@ class EventManager {
                 const tileId = this.convertToTileId(tile.layer, tile.x, tile.y);
                 if (tileId > 0) {
                     this.createNewEventWithTileset(tileX, tileY, tileId,
-                        this.freePlacementEnabled()
-                            ? { x: pos.x - tileX * this.tilemapManager.TILE_WIDTH, y: pos.y - tileY * this.tilemapManager.TILE_HEIGHT }
-                            : null);
+                        { x: pos.x - tileX * this.tilemapManager.TILE_WIDTH, y: pos.y - tileY * this.tilemapManager.TILE_HEIGHT });
                     this.tilesetPaletteViewer.clearSelection();
                     return;
                 }
@@ -661,9 +655,9 @@ class EventManager {
             tileX < 0 || tileX >= this.currentMap.width ||
             tileY < 0 || tileY >= this.currentMap.height) return false;
 
-        // With a pointer position and free placement, pick by pixel point so
-        // the top event of a stack is the one that opens.
-        const byPoint = Number.isFinite(pixelX) && Number.isFinite(pixelY) && this.freePlacementEnabled();
+        // With a pointer position, pick by pixel point so the top event of a
+        // stack is the one that opens.
+        const byPoint = Number.isFinite(pixelX) && Number.isFinite(pixelY);
         const eventAtPos = byPoint ? this.getEventAtPoint(pixelX, pixelY) : this.getEventAt(tileX, tileY);
         if (eventAtPos) this.editEvent(eventAtPos);
         else {
@@ -862,10 +856,10 @@ class EventManager {
             /Mac|iPhone|iPad|iPod/.test(navigator.platform || navigator.userAgent || '')
             ? 'Cmd' : 'Ctrl';
         const menuItems = [
-            { label: this._t('eventCtx.newEvent'), shortcut: 'Enter', action: createEventAction, enabled: !eventAtPos || this.freePlacementEnabled() },
+            { label: this._t('eventCtx.newEvent'), shortcut: 'Enter', action: createEventAction, enabled: true },
             { label: this._t('eventCtx.editEvent'), shortcut: 'Enter', action: () => this.editEvent(eventAtPos), enabled: !!eventAtPos },
             { label: this._t('eventCtx.previewEvent'), enabled: !!eventAtPos, submenu: this._eventPreviewMenu(eventAtPos) },
-            { label: this._t('quickEvent.title'), enabled: !eventAtPos || this.freePlacementEnabled(), submenu: [
+            { label: this._t('quickEvent.title'), enabled: true, submenu: [
                 { label: this._t('quickEvent.transfer'), action: () => this.showQuickEventDialog('transfer', tileX, tileY) },
                 { label: this._t('quickEvent.door'), action: () => this.showQuickEventDialog('door', tileX, tileY) },
                 { label: this._t('quickEvent.treasure'), action: () => this.showQuickEventDialog('treasure', tileX, tileY) },
@@ -1085,13 +1079,6 @@ class EventManager {
         );
     }
 
-    /** Whether this map lets events sit off the grid (the <freeplace> tag). */
-    freePlacementEnabled() {
-        return typeof RRMapPixelTags !== 'undefined' && RRMapPixelTags
-            ? RRMapPixelTags.hasFreePlacement(this.currentMap)
-            : false;
-    }
-
     /** An event's pixel offset from its cell origin, in map pixels. */
     eventOffsetOf(event) {
         const offset = event && event.rrOffset;
@@ -1243,52 +1230,11 @@ class EventManager {
         const newPixelX = pos.x - this.dragOffset.x;
         const newPixelY = pos.y - this.dragOffset.y;
 
-        if (this.freePlacementEnabled()) {
-            this.updateDragFree(newPixelX, newPixelY);
-            return;
-        }
-
-        const newTileX = Math.floor((newPixelX + this.tilemapManager.TILE_WIDTH / 2) / this.tilemapManager.TILE_WIDTH);
-        const newTileY = Math.floor((newPixelY + this.tilemapManager.TILE_HEIGHT / 2) / this.tilemapManager.TILE_HEIGHT);
-
-        // Check if position changed
-        if (newTileX !== this.draggedEvent.x || newTileY !== this.draggedEvent.y) {
-            // Check bounds
-            if (newTileX >= 0 && newTileX < this.currentMap.width &&
-                newTileY >= 0 && newTileY < this.currentMap.height) {
-
-                // Check if there's another event at the target position (but not the dragged one)
-                const existingEvent = this.getEventAt(newTileX, newTileY);
-                if (!existingEvent || existingEvent.id === this.draggedEvent.id) {
-                    // First real movement: capture the pre-drag state for
-                    // undo (the event still holds its original position here)
-                    if (!this._dragStateSaved) {
-                        this._dragStateSaved = true;
-                        this.resetMapClickTracking();
-                        this.saveState();
-                    }
-                    // Update event position
-                    this.draggedEvent.x = newTileX;
-                    this.draggedEvent.y = newTileY;
-
-                    // Update selection to follow the dragged event
-                    this.selectTile(newTileX, newTileY);
-
-                    // Move just the dragged sprite. A full renderEvents()
-                    // per tile step rebuilt every event sprite and the
-                    // sidebar list (resetting its scroll); the final
-                    // renderEvents() happens once in finishDragging.
-                    const sprite = this.eventSprites.get(this.draggedEvent.id);
-                    if (sprite) {
-                        sprite.x = newTileX * this.tilemapManager.TILE_WIDTH;
-                        sprite.y = newTileY * this.tilemapManager.TILE_HEIGHT;
-                        this.updateSelectionHighlight();
-                    } else {
-                        this.renderEvents();
-                    }
-                }
-            }
-        }
+        // Events drag at pixel granularity: the cell follows the sprite's
+        // origin and the offset is the remainder, so a drag can set an event
+        // down between cells. With no offset chosen the offset lands on zero
+        // and the event behaves exactly as the stock grid one did.
+        this.updateDragFree(newPixelX, newPixelY);
     }
 
     // Finish dragging
@@ -1781,10 +1727,7 @@ class EventManager {
             console.warn('No map loaded');
             return null;
         }
-        // Free placement lets events share a cell; the one-per-cell rule is
-        // a stock-grid rule only.
-        if (x < 0 || x >= this.currentMap.width || y < 0 || y >= this.currentMap.height ||
-            (!this.freePlacementEnabled() && this.getEventAt(x, y))) {
+        if (x < 0 || x >= this.currentMap.width || y < 0 || y >= this.currentMap.height) {
             return null;
         }
 
@@ -1857,8 +1800,7 @@ class EventManager {
             console.warn('No map loaded');
             return null;
         }
-        if (x < 0 || x >= this.currentMap.width || y < 0 || y >= this.currentMap.height ||
-            (!this.freePlacementEnabled() && this.getEventAt(x, y))) {
+        if (x < 0 || x >= this.currentMap.width || y < 0 || y >= this.currentMap.height) {
             return null;
         }
 
@@ -2073,12 +2015,7 @@ class EventManager {
             return;
         }
 
-        // Check if there's already an event at this position (free placement
-        // lets events share a cell, so the rule is the stock grid's alone)
-        if (this.getEventAt(x, y) && !this.freePlacementEnabled()) {
-            alert(tt('There is already an event at this position.'));
-            return;
-        }
+        // Events may share a cell now; paste stacks alongside whatever is there.
 
         // Save state for undo
         this.saveState();

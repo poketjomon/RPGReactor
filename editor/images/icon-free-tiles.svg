@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Free Tiles">
+  <defs>
+    <linearGradient id="ft-tile-back" x1="34" y1="8" x2="56" y2="30" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0876ed"/><stop offset=".55" stop-color="#07399f"/><stop offset="1" stop-color="#03142f"/>
+    </linearGradient>
+    <linearGradient id="ft-tile-front" x1="8" y1="30" x2="34" y2="56" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#24bdf3"/><stop offset=".6" stop-color="#075cdd"/><stop offset="1" stop-color="#03142f"/>
+    </linearGradient>
+  </defs>
+
+  <!-- A tile stamped off the grid, up and to the right. -->
+  <rect x="30" y="6" width="26" height="26" rx="3" fill="#01030a"/>
+  <rect x="32.5" y="8.5" width="21" height="21" rx="2" fill="url(#ft-tile-back)" stroke="#24bdf3" stroke-width="1.8"/>
+
+  <!-- The tile it lands beside, on the grid. -->
+  <rect x="8" y="30" width="26" height="26" rx="3" fill="#01030a"/>
+  <rect x="10.5" y="32.5" width="21" height="21" rx="2" fill="url(#ft-tile-front)" stroke="#d7318f" stroke-width="1.6"/>
+
+  <!-- Pixels set free between them. -->
+  <rect x="27" y="27" width="6" height="6" rx="1" fill="#ffd529" stroke="#01030a" stroke-width="1.6"/>
+  <rect x="20" y="20" width="4" height="4" rx="1" fill="#fff59c" stroke="#01030a" stroke-width="1.4"/>
+  <rect x="38" y="40" width="4" height="4" rx="1" fill="#fff59c" stroke="#01030a" stroke-width="1.4"/>
+</svg>

@@ -67,18 +67,25 @@ test('Event mode double-click creates only on an empty in-bounds map tile', () =
 
     manager.currentMap.events[created.id] = created;
 
-    assert.equal(manager.createNewEvent(3, 4), null, 'an occupied tile cannot gain a duplicate event');
+    // Free placement lets a second event share the cell: it stacks, still
+    // detached until its editor commits.
+    const stacked = manager.createNewEvent(3, 4);
+    assert.ok(stacked, 'an occupied tile can gain a stacked event');
+    assert.equal(edited.length, 2, 'the stacked event opens in its editor');
+    assert.equal(edited[1].session.isNew, true);
+    assert.equal(stacked.x, 3);
+    assert.equal(manager.currentMap.events.filter(Boolean).length, 1, 'stacking stays detached until commit');
     assert.equal(manager.createNewEvent(-1, 4), null, 'an out-of-bounds tile cannot gain an event');
-    assert.equal(manager.undoStack.length, 0, 'rejected creation does not add undo history');
 
+    edited.length = 0;
     now += 500;
     manager.handleMapPointerDown(pointerAt(3, 4));
     now += 100;
     manager.handleMapPointerDown(pointerAt(3, 4));
-    assert.equal(edited.length, 2, 'double-clicking an occupied tile edits the existing event');
+    assert.equal(edited.length, 1, 'double-clicking an occupied tile edits the top event, not a duplicate');
     assert.equal(manager.currentMap.events.filter(Boolean).length, 1);
-    assert.equal(edited[1].event, created);
-    assert.equal(edited[1].session.isNew, undefined);
+    assert.equal(edited[0].event, created);
+    assert.equal(edited[0].session.isNew, undefined);
 });
 
 test('Event mode outlines the hovered map cell without covering the selected one', () => {

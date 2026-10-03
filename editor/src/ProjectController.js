@@ -2499,13 +2499,11 @@ class ProjectController {
         return text.replace(/\n{3,}/g, '\n\n').trim();
     }
 
-    /** Fill the 2D pixel section: pixel movement and free placement. */
+    /** Fill the 2D pixel section: the pixel movement switch. */
     populateMapPixelForm(mapData) {
         const pixel = document.getElementById('map-pixel-checkbox');
-        const freeplace = document.getElementById('map-freeplace-checkbox');
         if (typeof RRMapPixelTags === 'undefined' || !RRMapPixelTags) return;
         if (pixel) pixel.checked = RRMapPixelTags.hasPixel(mapData);
-        if (freeplace) freeplace.checked = RRMapPixelTags.hasFreePlacement(mapData);
     }
 
     /** Fill the 3D section: the switch, the room's height and its images. */
@@ -3361,13 +3359,12 @@ class ProjectController {
             else mapData.note = `${mapData.note}${mapData.note ? '\n' : ''}<3d>`;
         }
 
-        // 2D pixel features: the checkboxes are the switches; a tag typed into
-        // the note counts too, so the two can never disagree in the saved map.
+        // The pixel switch: the checkbox leads; a tag typed into the note
+        // counts too, so the two can never disagree in the saved map. Old
+        // <freeplace> tags ride along harmlessly (free placement is always on).
         if (typeof RRMapPixelTags !== 'undefined' && RRMapPixelTags) {
             const wantsPixel = !!document.getElementById('map-pixel-checkbox')?.checked || /<pixel(?::[^>]*)?>/i.test(noteText);
-            const wantsFreePlacement = !!document.getElementById('map-freeplace-checkbox')?.checked || /<freeplace>/i.test(noteText);
             RRMapPixelTags.setPixel(mapData, wantsPixel);
-            RRMapPixelTags.setFreePlacement(mapData, wantsFreePlacement);
         }
 
         // Initialize data array if creating new map

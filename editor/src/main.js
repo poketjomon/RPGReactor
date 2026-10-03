@@ -882,11 +882,6 @@ class RPGReactor {
             this.uiManager.updateStatus(window.I18n ? window.I18n.t('status.loadMapFirst') : 'Load a map first');
             return;
         }
-        if (!this.decorManager.freePlacementEnabled()) {
-            const hint = 'Free tiles need the map\'s Free placement switch (Map Properties, 2D Pixel).';
-            this.uiManager.updateStatus(window.I18n?.tText ? window.I18n.tText(hint) : hint);
-            return;
-        }
         this.eventManager.setTilesetPaletteViewer(this.tilesetPaletteViewer);
         const enabled = !this.decorManager.active;
         if (enabled) {

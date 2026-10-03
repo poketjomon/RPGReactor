@@ -43,13 +43,6 @@ class DecorManager {
         return this.eventManager?.tilesetPaletteViewer || null;
     }
 
-    /** Whether the current map allows free placement at all. */
-    freePlacementEnabled() {
-        return typeof RRMapPixelTags !== 'undefined' && RRMapPixelTags
-            ? RRMapPixelTags.hasFreePlacement(this.currentMap)
-            : false;
-    }
-
     /** Plain-sheet bands only: B-E (0-1023), Reactor F/G (1024-1535), A5 (1536-1663). */
     static stampableTileId(tileId) {
         return Number.isInteger(tileId) && tileId > 0
@@ -64,7 +57,7 @@ class DecorManager {
     }
 
     setActive(enabled) {
-        if (!this.currentMap || !this.freePlacementEnabled()) enabled = false;
+        if (!this.currentMap) enabled = false;
         if (enabled === this.active) {
             if (enabled) this.render();
             return;

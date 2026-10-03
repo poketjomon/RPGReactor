@@ -1,24 +1,21 @@
 # Pixel movement and free placement (2D)
 
-Two opt-in 2D features, switched per map from **Map Properties › 2D Pixel**.
-Both default to off, and a map without them is ordinary RPG Maker data that
-the stock engine, plugins and RPG Maker itself all read unchanged. Both stand
-down on a 3D map.
+A runtime opt-in and an editor way of working:
 
-- **Pixel movement** — the player walks continuously instead of stepping a
-  tile at a time. The held direction is a velocity; the body is a box smaller
-  than a tile (default 0.7 of one) that slides along walls. Diagonal input
-  walks diagonally. Steps, encounters, touch triggers, bushes, camera scroll
-  and followers keep their stock meaning: one "step" is one tile of ground
-  covered, and a follower trails about a body-length behind its leader.
-- **Free placement** — events may be placed, dragged and pasted at pixel
-  granularity, and several may share a cell. Each event stores what it needs
-  in an `rrOffset: { x, y }` key (pixels, relative to its cell's top-left)
-  on the event inside `MapNNN.json`; a zero offset takes the key back off.
-- **Free tiles** — the toolbar's Free Tiles button (freeplace maps only)
-  opens a stamp tool: the palette's selected tile is stamped at any pixel
-  position, dragged to move, right-clicked to lift above the characters or
-  delete. Stamps live in an `rrDecor` list on the map
+- **Pixel movement** — per map, from **Map Properties › 2D Pixel** (the note
+  tag `<pixel>`). The player walks continuously instead of stepping a tile at
+  a time: the held direction is a velocity, the body is a box smaller than a
+  tile (default 0.7 of one, `<pixel:0.6>` to tune it) that slides along
+  walls, and diagonal input walks diagonally. Steps, encounters, touch
+  triggers, bushes, camera scroll and followers keep their stock meaning.
+- **Free placement** — always on, no switch. Events place, drag and paste at
+  pixel granularity and may share a cell (each event carries an
+  `rrOffset: { x, y }` in pixels on the event inside `MapNNN.json`; a zero
+  offset takes the key back off, and stock RPG Maker ignores the key).
+- **Free tiles** — the toolbar's **Free Tiles** button opens a stamp tool for
+  any map: the palette's selected tile is stamped at any pixel position,
+  dragged to move, right-clicked to lift above the characters or delete.
+  Stamps live in an `rrDecor` list on the map
   (`[{ tileId, x, y, above }]`, pixel coordinates, top-left) and are drawn
   by the runtime inside the tilemap's own scrolled layers, so each one
   depthsorts like the tiles around it. Plain sheets only (B-E, Reactor's
@@ -26,12 +23,16 @@ down on a 3D map.
   A1-A4 are refused. Stamps are pure presentation — nothing to collide
   with, nothing to trigger; paint the grid underneath if a spot must block.
 
+The old `<freeplace>` note tag still opens nothing and blocks nothing: free
+placement is simply how the editor works now. A map carrying the tag keeps
+working unchanged.
+
 ## Switches
 
-| Checkbox | Map note tag | Data key | Runtime |
+| Switch | Map note tag | Data key | Runtime |
 |---|---|---|---|
-| Pixel movement | `<pixel>` | `rrPixel: true` also works | `runtime/reactor_pixel.js` |
-| Free placement | `<freeplace>` | `rrFreePlacement: true` also works | editor behavior; runtime renders `rrOffset` and `rrDecor` |
+| Pixel movement (per map) | `<pixel>` | `rrPixel: true` also works | `runtime/reactor_pixel.js` |
+| Free placement (always on) | — | `rrOffset` / `rrDecor` on the map data | editor behavior; runtime renders both |
 
 A tag typed into the note by hand counts too — the checkbox and the tag can
 never disagree in the saved map. `<pixel:0.6>` tunes the body box (clamped

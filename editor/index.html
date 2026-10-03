@@ -197,7 +197,7 @@
             <div class="toolbar-separator"></div>
             <span class="toolbar-label" data-i18n="toolbar.tools">Tools:</span>
             <button class="tool-button" id="toolbar-event-manager-btn" data-action="toggle-event-mode" title="Event Manager" data-i18n-title="toolbar.title.eventManager"><img src="images/icon-event.png" onerror="this.style.display='none'; this.parentElement.innerHTML='EV';"></button>
-            <button class="tool-button" id="toolbar-decor-btn" data-action="toggle-decor-mode" title="Free Tiles (freeplace maps)"><img src="images/icon-event.png" onerror="this.style.display='none'; this.parentElement.innerHTML='FT';"></button>
+            <button class="tool-button" id="toolbar-decor-btn" data-action="toggle-decor-mode" title="Free Tiles: stamp tiles and place events off the grid"><img src="images/icon-free-tiles.svg" alt="" onerror="this.style.display='none'; this.parentElement.innerHTML='FT';"></button>
             <button class="tool-button" id="toolbar-database-btn" data-action="open-database" title="Database" data-i18n-title="toolbar.title.database">
                 <img src="images/icon-database.svg" alt="" onerror="this.style.display='none'; this.parentElement.innerHTML='DB';">
             </button>
@@ -722,18 +722,15 @@
                                 <div class="map-props-physics-note" data-i18n-text-source="Blank uses the project's physics (Database › Controls)." style="font-size: 11px; color: var(--color-text-muted); line-height: 1.4;">Blank uses the project's physics (Database › Controls).</div>
                             </div>
                         </div>
-                        <!-- 2D pixel features: pixel movement and free placement (runtime/reactor_pixel.js) -->
+                        <!-- 2D pixel feature: pixel movement (runtime/reactor_pixel.js); free tiles and
+                             free event placement are always available from the toolbar's Free Tiles tool -->
                         <div class="map-props-card">
                             <div class="lit-section-header map-props-card-header" data-i18n-text-source="2D Pixel">2D Pixel</div>
                             <label class="map-props-label" style="display: flex; align-items: center; cursor: pointer;">
                                 <input type="checkbox" id="map-pixel-checkbox" style="margin-right: 6px;">
                                 <span data-i18n-text-source="Pixel movement">Pixel movement</span>
                             </label>
-                            <label class="map-props-label" style="display: flex; align-items: center; cursor: pointer;">
-                                <input type="checkbox" id="map-freeplace-checkbox" style="margin-right: 6px;">
-                                <span data-i18n-text-source="Free placement">Free placement</span>
-                            </label>
-                            <div class="map-props-physics-note" data-i18n-text-source="On this 2D map the player walks in pixels and events can be placed off the grid. Off keeps the stock tile steps." style="font-size: 11px; color: var(--color-text-muted); line-height: 1.4;">On this 2D map the player walks in pixels and events can be placed off the grid. Off keeps the stock tile steps.</div>
+                            <div class="map-props-physics-note" data-i18n-text-source="On this 2D map the player walks in pixels instead of tile steps. Off keeps the stock steps." style="font-size: 11px; color: var(--color-text-muted); line-height: 1.4;">On this 2D map the player walks in pixels instead of tile steps. Off keeps the stock steps.</div>
                         </div>
                         <!-- Note Section -->
                         <div class="map-props-card" style="flex: 1;">
